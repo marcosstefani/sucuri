@@ -1,3 +1,6 @@
 __pycache__/
 *.db
 .vscode/
+sucuri.egg-info/
+dist/
+*.pyc

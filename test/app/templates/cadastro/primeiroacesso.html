@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <title>ProntWeb</title>
+
+        <link href="{{url_for('static',filename='vendor/bootstrap/css/bootstrap.css')}}" rel="stylesheet"/>
+        <link href="{{url_for('static',filename='vendor/metisMenu/metisMenu.css')}}" rel="stylesheet"/>
+        <link href="{{url_for('static',filename='css/sb-admin-2.css')}}" rel="stylesheet"/>
+        <link href="{{url_for('static',filename='vendor/font-awesome/css/font-awesome.css')}}" rel="stylesheet"/>
+        <link href="{{url_for('static',filename='fonts/exo2/exo2.css')}}" rel="stylesheet"/>
+        <link href="{{url_for('static',filename='css/prontweb.css')}}" rel="stylesheet"/>
+    </head>
+    <body>
+        <div id="wrapper">
+            <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0">
+                <div class="navbar-header">
+                    <a href="/" id="btn-principal">
+                        <img src="{{url_for('static',filename='images/logo.jpg')}}" alt="Logo">
+                    </a>
+                </div>
+            </nav>
+
+            <div id="page-wrapper">
+                <div class="row">
+                    <div class="panel panel-default">
+                        <div class="panel-body">
+                            <ul class="nav nav-pills" id="nav-wizard">
+                                <li class="active"><a href="#dadospessoais" data-toggle="tab">Home</a></li>
+                                <li><a href="#endereco" data-toggle="tab">Endereço</a></li>
+                                <li><a href="#planos" data-toggle="tab">Planos</a></li>
+                                <li><a href="#mensal" data-toggle="tab">Mensal</a></li>
+                                <li><a href="#anual" data-toggle="tab">Anual</a></li>
+                            </ul>
+
+                            <div id='content' class="tab-content">
+                                <div class="tab-pane active" id="dadospessoais">
+                                    <h4>Cadastre seus dados pessoais</h4>
+                                    <hr>
+                                    <div class="row">
+                                        <div class="col-lg-6 cad">
+                                            <label>Nome</label>
+                                            <input class="form-control" autocomplete="off" name="nome" type="text" disabled="" value="{{ usuario.nome }}">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-lg-3 col-xs-7 cad" id="cpf-bloco">
+                                            <label class="control-label">CPF</label>
+                                            <input id="cpf" class="form-control" autocomplete="off" name="cpf" placeholder="Apenas Números" {% if usuario.cpf %}value="{{ usuario.cpf }}"{% endif %}  onkeyup="somenteNumeros(this);">
+                                        </div>
+                                        <div class="col-lg-3 col-xs-5 cad">
+                                            <label>Nacionalidade</label>
+                                            <select class="form-control" autocomplete="off" name="nacionalidade" >
+                                                {% for pais in paises %}
+                                                    <option {% if paisusuario==pais.iso3 %} selected="selected"{% endif %} value={{pais.iso3}}>{{pais.nome}}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-lg-3 cad">
+                                            <label class="label-radio">Sexo:</label>
+                                            <label class="radio-inline">
+                                                <input type="radio" name="sexo" value="F" checked="">Feminino
+                                            </label>
+                                            <label class="radio-inline">
+                                                <input type="radio" name="sexo" value="M">Masculino
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="panel-footer">
+                                        <button type="button" class="next btn btn-primary btn-sm">Próximo</button>
+                                    </div>
+                                </div>
+                                <div class="tab-pane" id="endereco">
+                                    <h4>Endereço</h4>
+                                    <hr>
+                                    <div class="row">
+                                        <div id="cep-bloco" class="col-lg-3 col-xs-6 cad">
+                                            <label class="control-label">CEP</label>
+                                            <div class="form-group input-group">
+                                                <input id="cep" class="form-control" autocomplete="off" name="cep" placeholder="Apenas Números" onkeyup="somenteNumeros(this);" onblur="consultaCEP();">
+                                                <span class="input-group-btn">
+                                                    <button class="btn btn-default" type="button"><i class="fa fa-search" onclick="consultaCEP();"></i>
+                                                    </button>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div id="logradouro-bloco" class="col-lg-5 col-xs-8 cad">
+                                            <label class="control-label">Logradouro</label>
+                                            <input id="logradouro" class="form-control" autocomplete="off" name="logradouro">
+                                        </div>
+                                        <div id="numero-bloco" class="col-lg-1 col-xs-4 cad">
+                                            <label class="control-label">Número</label>
+                                            <input id="numero" class="form-control" autocomplete="off" name="numero">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-lg-6 cad">
+                                            <label>Complemento</label>
+                                            <input id="complemento" class="form-control" autocomplete="off" name="complemento">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div id="bairro-bloco" class="col-lg-3 cad">
+                                            <label class="control-label">Bairro</label>
+                                            <input id="bairro" class="form-control" autocomplete="off" name="bairro">
+                                        </div>
+                                        <div class="col-lg-2 col-xs-9 cad">
+                                            <label class="control-label">Cidade</label>
+                                            <input id="cidade" class="form-control" autocomplete="off" name="cidade">
+                                        </div>
+                                        <div class="col-lg-1 col-xs-3 cad">
+                                            <label class="control-label">UF</label>
+                                            <input id="uf" class="form-control" autocomplete="off" name="uf" maxlength="2">
+                                        </div>
+                                    </div>
+                                    <div class="panel-footer">
+                                        <button type="button" class="prev btn btn-primary btn-sm">Anterior</button>
+                                        <button type="button" class="next btn btn-primary btn-sm">Próximo</button>
+                                    </div>
+                                </div>
+                                <div class="tab-pane" id="planos">
+                                    <h4>Escolha seu plano</h4>
+                                    <div class="row">
+                                        <div class="col-lg-3 col-md-6">
+                                            <div class="panel panel-primary">
+                                                <div class="panel-heading">
+                                                    <a id="planos-corpo" class="next">
+                                                        <div class="row">
+                                                            <div class="col-xs-3">
+                                                                <i class="fa fa-calendar-o fa-5x"></i>
+                                                            </div>
+                                                            <div class="col-xs-9 text-right">
+                                                                <div class="huge">Mensal</div>
+                                                                <div>Pagamento a cada mês</div>
+                                                            </div>
+                                                        </div>
+                                                    </a>
+                                                </div>
+                                                <a id="planos-footer" data-toggle="modal" data-target="#modalAnual">
+                                                    <div class="panel-footer">
+                                                        <span class="pull-left">Ver Detalhes</span>
+                                                        <span class="pull-right"><i class="fa fa-question-circle"></i></span>
+                                                        <div class="clearfix"></div>
+                                                    </div>
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-md-6">
+                                            <div class="panel panel-green">
+                                                <div class="panel-heading">
+                                                    <a id="planos-corpo" class="next-anual">
+                                                        <div class="row">
+                                                            <div class="col-xs-3">
+                                                                <i class="fa fa-calendar fa-5x"></i>
+                                                            </div>
+                                                            <div class="col-xs-9 text-right">
+                                                                <div class="huge">Anual</div>
+                                                                <div>Pagamento a cada ano</div>
+                                                            </div>
+                                                        </div>
+                                                    </a>
+                                                </div>
+                                                <a id="planos-footer" data-toggle="modal" data-target="#modalAnual">
+                                                    <div class="panel-footer">
+                                                        <span class="pull-left">Ver Detalhes</span>
+                                                        <span class="pull-right"><i class="fa fa-question-circle"></i></span>
+                                                        <div class="clearfix"></div>
+                                                    </div>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="panel-footer">
+                                        <button type="button" class="prev btn btn-primary btn-sm">Anterior</button>
+                                    </div>
+                                </div>
+                                <div class="tab-pane" id="mensal">
+                                    <h4><i class="fa fa-calendar-o fa-fw"></i> Plano Mensal</h4>
+                                    <hr>
+                                    <p>Texto Plano Mensal</p>
+                                    <div class="panel-footer">
+                                        <button type="button" class="prev btn btn-primary btn-sm">Anterior</button>
+                                        <button type="button" class="save-mensal btn btn-success btn-sm" onclick="window.location.href='{{url_for('home.index')}}'">Concluir</button>
+                                    </div>
+                                </div>
+                                <div class="tab-pane" id="anual">
+                                    <h4><i class="fa fa-calendar fa-fw"></i> Plano Anual</h4>
+                                    <hr>
+                                    <p>Texto Plano Anual</p>
+                                    <div class="panel-footer">
+                                        <button type="button" class="prev-anual btn btn-primary btn-sm">Anterior</button>
+                                        <button type="button" class="save-anual btn btn-success btn-sm" onclick="window.location.href='{{url_for('home.index')}}'">Concluir</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.panel -->
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="modalAnual" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+                        <h4 class="modal-title" id="myModalLabel">Plano Anual</h4>
+                    </div>
+                    <div class="modal-body">
+                        Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+                    </div>
+                </div>
+                <!-- /.modal-content -->
+            </div>
+            <!-- /.modal-dialog -->
+        </div>
+
+        <div class="modal fade" id="modalMensal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+                        <h4 class="modal-title" id="myModalLabel">Plano Mensal</h4>
+                    </div>
+                    <div class="modal-body">
+                        Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+                    </div>
+                </div>
+                <!-- /.modal-content -->
+            </div>
+            <!-- /.modal-dialog -->
+        </div>
+        <!-- Java Scripts -->
+        <script src="{{url_for('static',filename='vendor/jquery/jquery.js')}}"></script>
+        <script src="{{url_for('static',filename='vendor/bootstrap/js/bootstrap.js')}}"></script>
+        <script src="{{url_for('static',filename='vendor/metisMenu/metisMenu.js')}}"></script>
+        <script src="{{url_for('static',filename='js/sb-admin-2.js')}}"></script>
+        <script src="{{url_for('static',filename='js/wizard.js')}}"></script>
+        <script src="{{url_for('static',filename='js/endereco.js')}}"></script>
+        <script src="{{url_for('static',filename='js/util.js')}}"></script>
+
+        </script>
+    </body>
+</html>
