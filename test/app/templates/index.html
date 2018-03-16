@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <title>ProntWeb</title>
+
+        <link href="{{url_for('static',filename='vendor/bootstrap/css/bootstrap.css')}}" rel="stylesheet"/>
+        <link href="{{url_for('static',filename='vendor/metisMenu/metisMenu.css')}}" rel="stylesheet"/>
+        <link href="{{url_for('static',filename='css/sb-admin-2.css')}}" rel="stylesheet"/>
+        <link href="{{url_for('static',filename='vendor/font-awesome/css/font-awesome.css')}}" rel="stylesheet"/>
+        <link href="{{url_for('static',filename='fonts/exo2/exo2.css')}}" rel="stylesheet"/>
+        <link href="{{url_for('static',filename='css/prontweb.css')}}" rel="stylesheet"/>
+    </head>
+    <body>
+        <div id="wrapper">
+            <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0">
+                <div class="navbar-header">
+                    <a href="/" id="btn-principal">
+                        <img src="{{url_for('static',filename='images/logo.jpg')}}" alt="Logo">
+                    </a>
+                </div>
+            </nav>
+
+            <div id="page-wrapper">
+                <div class="row" id="menu-principal">
+                    <div class="col-lg-3 col-md-6">
+                        <a href="#" id="btn-principal">
+                            <img src="{{url_for('static',filename='images/cadastro.png')}}" alt="Cadastro">
+                            <h4>Cadastro</h4>
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <a href="#" id="btn-principal">
+                            <img src="{{url_for('static',filename='images/perfilclinico.png')}}" alt="Cadastro">
+                            <h4>Perfil Clínico</h4>
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <a href="#" id="btn-principal">
+                            <img src="{{url_for('static',filename='images/receituario.png')}}" alt="Cadastro">
+                            <h4>Receituário</h4>
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <a href="#" id="btn-principal">
+                            <img src="{{url_for('static',filename='images/agenda.png')}}" alt="Cadastro">
+                            <h4>Agenda</h4>
+                        </a>
+                    </div>
+                </div>
+                <div class="row" id="menu-principal">
+                    <div class="col-lg-3 col-md-6">
+                        <a href="#" id="btn-principal">
+                            <img src="{{url_for('static',filename='images/historicoclinico.png')}}" alt="Cadastro">
+                            <h4>Histórico Clínico</h4>
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <a href="#" id="btn-principal">
+                            <img src="{{url_for('static',filename='images/laudos.png')}}" alt="Cadastro">
+                            <h4>Laudos</h4>
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <a href="#" id="btn-principal">
+                            <img src="{{url_for('static',filename='images/exames.png')}}" alt="Cadastro">
+                            <h4>Exames</h4>
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <a href="#" id="btn-principal">
+                            <img src="{{url_for('static',filename='images/resultados.png')}}" alt="Cadastro">
+                            <h4>Resultados</h4>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Java Scripts -->
+        <script src="{{url_for('static',filename='vendor/jquery/jquery.js')}}"></script>
+        <script src="{{url_for('static',filename='vendor/bootstrap/js/bootstrap.js')}}"></script>
+        <script src="{{url_for('static',filename='vendor/metisMenu/metisMenu.js')}}"></script>
+        <script src="{{url_for('static',filename='js/sb-admin-2.js')}}"></script>
+    </body>
+</html>

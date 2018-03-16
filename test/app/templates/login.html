@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <meta name="google-signin-scope" content="profile email">
+        <meta name="google-signin-client_id" content="298579767154-g41i97u548670rmd4un5q6vioo6luei6.apps.googleusercontent.com">
+        <script src="https://apis.google.com/js/platform.js" async defer></script>
+
+        <title>ProntWeb</title>
+
+        <link href="{{url_for('static',filename='vendor/bootstrap/css/bootstrap.min.css')}}" rel="stylesheet">
+        <link href="{{url_for('static',filename='vendor/metisMenu/metisMenu.min.css')}}" rel="stylesheet">
+        <link href="{{url_for('static',filename='css/sb-admin-2.css')}}" rel="stylesheet">
+        <link href="{{url_for('static',filename='vendor/font-awesome/css/font-awesome.min.css')}}" rel="stylesheet">
+        <link href="{{url_for('static',filename='fonts/exo2/exo2.css')}}" rel="stylesheet"/>
+        <link href="{{url_for('static',filename='css/prontweb.css')}}" rel="stylesheet"/>
+
+    </head>
+    <body>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 col-md-offset-4">
+                    <div class="login-panel panel panel-default" id="login">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">Favor realizar o Login no Google</h3>
+                        </div>
+                        <img src="{{url_for('static',filename='images/logo.jpg')}}" alt="Logo">
+                        <div class="panel-body">
+                            <div id="btn-google"></div>
+                        </div>
+                    </div>
+
+                    <form role="form" action="{{url_for('home.acesso')}}" method="POST" id="form-login">
+                        <fieldset>
+                            <input class="form-control" name="google_id" id="google_id">
+                            <input class="form-control" name="google_image" id="google_image">
+                            <input class="form-control" name="google_token" id="google_token">
+                            <input class="form-control" name="email" id="email">
+                            <input class="form-control" name="nome" id="nome">
+                        </fieldset>
+                        <button type="submit" class="btn btn-default" id="btn_ok_login">OK</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- Java Scripts -->
+        <script src="{{url_for('static',filename='vendor/jquery/jquery.min.js')}}"></script>
+        <script src="{{url_for('static',filename='vendor/bootstrap/js/bootstrap.min.js')}}"></script>
+        <script src="{{url_for('static',filename='vendor/metisMenu/metisMenu.min.js')}}"></script>
+        <script src="{{url_for('static',filename='js/sb-admin-2.js')}}"></script>
+        <script src="{{url_for('static',filename='js/google.js')}}"></script>
+        <script src="https://apis.google.com/js/platform.js?onload=renderButton" async defer></script>
+    </body>
+</html>
