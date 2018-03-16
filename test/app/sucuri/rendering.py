@@ -1,15 +1,26 @@
 import json, os
-# from .globals import _app_stack
 
 def rendering():
     local = os.getcwd()
     arq = open(local + '/app/templates/teste.suc', 'r')
     text = arq.readlines()
-    for line in text :
-        # print(line)
-        # print(spaces(line))
-        print(tag(line))
+    space = 0
+    tagclose = []
+    result = ''
+    for textline in text :
+        ctrl = transform(textline)
+        result += ctrl[0]
+        if space < spaces(textline):
+            tagclose.append(ctrl[1])
+        elif space >= spaces(textline) and not(space == 0 and spaces(textline) == 0):
+            result += '</' + ctrl[1] + '>'
+        
+        space = spaces(textline)
     arq.close()
+    for i in reversed(range(len(tagclose))):
+        result += '</' + str(tagclose[i]) + '>'
+    # print(result)
+    return result
 
 def spaces(text):
     result = 0
@@ -19,15 +30,26 @@ def spaces(text):
             break
     return result
 
-def tag(text):
-    result = text.strip()
+def transform(text):
+    msg = text.strip()
+    tag = text.strip()
+    properties = ''
+    txt = ''
 
-    if '(' in result:
-        result = substring(result, 0, instr(result, '('))
-    elif ' ' in result:
-        result = substring(result, 0, instr(result, ' '))
+    if '(' in msg:
+        tag = substring(msg, 0, instr(msg, '('))
+        properties = ' ' + substring(msg, instr(msg, '(') +1, instr(msg, ')'))
+        if instr(msg, ')') +1 != len(msg):
+            txt = substring(msg, instr(msg, ')') +2, len(msg) )
+            
+    elif ' ' in msg:
+        tag = substring(msg, 0, instr(msg, ' '))
+        if instr(msg, ' ') +1 != len(msg):
+            txt = substring(msg, instr(msg, ' ') +1, len(msg) )
 
-    return result
+    result = '<' + tag + properties + '>' + txt
+
+    return [result, tag]
 
 def instr(text, char):
     result = 0
@@ -39,9 +61,12 @@ def instr(text, char):
     return result
 
 def substring(text, ini, end):
-    result = ''
     size = len(text)
+    result = ''
     if ini >= 0 and end > 0 and size > 0 and end > ini:
         end = end - size
-        result = text[ini:end]
+        if end != 0:
+            result = text[ini:end]
+        else:
+            result = text[ini:]
     return result
