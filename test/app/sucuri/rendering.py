@@ -9,17 +9,27 @@ def rendering():
     result = ''
     for textline in text :
         ctrl = transform(textline)
+        if space >= spaces(textline) and not(space == 0 and spaces(textline) == 0):
+            lastreg = len(tagclose) -1
+            result += '</' + tagclose[lastreg] + '>'
+            tagclose.pop(lastreg)
+
+        if space > spaces(textline):
+            lastreg = len(tagclose) -1
+            result += '</' + tagclose[lastreg] + '>'
+            tagclose.pop(lastreg)            
+
         result += ctrl[0]
-        if space < spaces(textline):
+        if space <= spaces(textline):
             tagclose.append(ctrl[1])
-        elif space >= spaces(textline) and not(space == 0 and spaces(textline) == 0):
+        elif space == spaces(textline) and not(space == 0 and spaces(textline) == 0):
             result += '</' + ctrl[1] + '>'
         
         space = spaces(textline)
     arq.close()
     for i in reversed(range(len(tagclose))):
         result += '</' + str(tagclose[i]) + '>'
-    # print(result)
+    print(result)
     return result
 
 def spaces(text):

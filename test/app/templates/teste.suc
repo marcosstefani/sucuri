@@ -2,3 +2,14 @@ html(lang='pt-br')
     body
         h3 Teste
         a(href='#') Oi
+        ul
+            li 
+                a(href='#') First
+            li 
+                a(href='#') Midle
+            li 
+                a(href='#') End
+        ul
+            li One
+            li Two
+            li Three
