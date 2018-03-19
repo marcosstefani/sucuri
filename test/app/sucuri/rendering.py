@@ -5,30 +5,37 @@ def rendering():
     arq = open(local + '/app/templates/teste.suc', 'r')
     text = arq.readlines()
     space = 0
-    tagclose = []
+    tabulation = 0
+    tags = []
     result = ''
+
     for textline in text :
         ctrl = transform(textline)
-        if space >= spaces(textline) and not(space == 0 and spaces(textline) == 0):
-            lastreg = len(tagclose) -1
-            result += '</' + tagclose[lastreg] + '>'
-            tagclose.pop(lastreg)
+        tags.append(ctrl[1])
 
-        if space > spaces(textline):
-            lastreg = len(tagclose) -1
-            result += '</' + tagclose[lastreg] + '>'
-            tagclose.pop(lastreg)            
+        if space == 0 and spaces(textline) > 0:
+            tabulation = spaces(textline) - space
+        
+        if tabulation > 0 and space >= spaces(textline):
+            quantity = ((space - spaces(textline)) / tabulation) + 1
+
+            if quantity == 0 and len(tags) > 0 and space > 0:
+                lastreg = len(tags) -2
+                result += '</' + tags[lastreg] + '>'
+                tags.pop(lastreg)
+
+            for i in reversed(range(0, int(quantity))):
+                lastreg = len(tags) -2
+                result += '</' + tags[lastreg] + '>'
+                tags.pop(lastreg)
 
         result += ctrl[0]
-        if space <= spaces(textline):
-            tagclose.append(ctrl[1])
-        elif space == spaces(textline) and not(space == 0 and spaces(textline) == 0):
-            result += '</' + ctrl[1] + '>'
-        
+
         space = spaces(textline)
+
     arq.close()
-    for i in reversed(range(len(tagclose))):
-        result += '</' + str(tagclose[i]) + '>'
+    for i in reversed(range(len(tags))):
+        result += '</' + str(tags[i]) + '>'
     print(result)
     return result
 
