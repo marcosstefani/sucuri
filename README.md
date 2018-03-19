@@ -1,1 +1,1 @@
-sucuri
+Simple and efficient Template Engine for Python projects

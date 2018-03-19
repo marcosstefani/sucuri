@@ -1,0 +1,6 @@
+
+# Include the license file
+include LICENSE.txt
+
+# Include the data files
+recursive-include data *
