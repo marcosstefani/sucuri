@@ -1,8 +1,8 @@
 import json, os
 
-def rendering(filename):
+def template(filename):
     local = os.getcwd()
-    arq = open(local + filename, 'r')
+    arq = open(local + '/' + filename, 'r')
     text = arq.readlines()
     space = 0
     tabulation = 0
