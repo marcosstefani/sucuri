@@ -11,23 +11,29 @@ def template(filename):
 
     for textline in text :
         ctrl = transform(textline)
-        tags.append(ctrl[1])
-
-        if space == 0 and spaces(textline) > 0:
-            tabulation = spaces(textline) - space
         
-        if tabulation > 0 and space >= spaces(textline):
-            quantity = ((space - spaces(textline)) / tabulation) + 1
+        if ctrl[1] != '|':
+            tags.append(ctrl[1])
 
-            if quantity == 0 and len(tags) > 0 and space > 0:
-                lastreg = len(tags) -2
-                result += '</' + tags[lastreg] + '>'
-                tags.pop(lastreg)
+            if space == 0 and spaces(textline) > 0:
+                tabulation = spaces(textline) - space
+            
+            if tabulation > 0 and space >= spaces(textline):
+                quantity = ((space - spaces(textline)) / tabulation) + 1
 
-            for i in reversed(range(0, int(quantity))):
-                lastreg = len(tags) -2
-                result += '</' + tags[lastreg] + '>'
-                tags.pop(lastreg)
+                if quantity == 0 and len(tags) > 0 and space > 0:
+                    lastreg = len(tags) -2
+                    result += '</' + tags[lastreg] + '>'
+                    tags.pop(lastreg)
+
+                for i in reversed(range(0, int(quantity))):
+                    lastreg = len(tags) -2
+                    result += '</' + tags[lastreg] + '>'
+                    tags.pop(lastreg)
+        
+        else:
+            msg = textline.strip()
+            ctrl[0] = msg.replace('|','\n')
 
         result += ctrl[0]
 
