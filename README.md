@@ -1,5 +1,5 @@
 # Sucuri
-Simple and efficient Template Engine for Python projects
+Simple and efficient template engine for Python projects inspired by [PugJS](https://pugjs.org)
 
 ## Instaling
 Install and update using [pip](https://pip.pypa.io/en/stable/quickstart/):
