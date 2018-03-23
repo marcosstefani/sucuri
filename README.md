@@ -103,3 +103,59 @@ def index():
     </body>
 </html>
 ```
+
+### Injecting template
+Code reuse can be done through injected templates. This facility makes reuse of the code very efficient and enables the creation of code components. In the sucuri the identification of an injection occurs through an `include` at the beginning of the .suc file and its use is carried out using the `+` symbol before the name of the file that was imported. See the example below using this feature:
+- Sucuri file (`template_include.suc`):
+```
+include inc/link
+include inc/list
+
+html
+    body
+        h1 Hello
+            | Title
+            | More
+        +link
+        h3 Oh Yeahh
+        +list
+```
+- File inside the folder `inc` called `link.suc` (`inc/link.suc`):
+```
+a(href='#') {text}
+```
+- File inside the folder `inc` called `list.suc` (`inc/list.suc`):
+```
+ul
+    li A
+    li B
+```
+- Python example:
+```
+from flask import Flask, render_template_string
+from sucuri import rendering
+
+app = Flask(__name__)
+
+@app.route("/")
+def index():
+    template = rendering.template('template_include.suc',{"text": "Hello! I'm here!"})
+    return render_template_string(template)
+```
+- Result:
+```
+<html>
+    <body>
+        <h1>Hello
+        Title
+        More
+        </h1>
+        <a href="#">Hello! I'm here!</a>
+        <h3>Oh Yeahh</h3>
+        <ul>
+            <li>A</li>
+            <li>B</li>
+        </ul>
+    </body>
+</html>
+```
