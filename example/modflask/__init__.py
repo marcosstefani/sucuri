@@ -5,6 +5,5 @@ app = Flask(__name__)
 
 @app.route("/")
 def index():
-    # template = rendering.template('template.suc')
-    template = rendering.template('template_data.suc',{"a": 1, "b": "Hello!"})
+    template = rendering.template('template_include.suc',{"text": "Hello! I'm here!"})
     return render_template_string(template)

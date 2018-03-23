@@ -1,0 +1,11 @@
+include inc/link
+include inc/list
+
+html
+    body
+        h1 Hello
+            | Title
+            | More
+        +link
+        h3 Oh Yeahh
+        +list
