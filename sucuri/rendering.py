@@ -8,8 +8,15 @@ def template(filename, obj=None):
     tabulation = 0
     tags = []
     result = ''
+    
+    newtext = inject(text)
 
-    for textline in text :
+    for x in range(0, len(newtext)):
+        textline = newtext[x]
+        
+        if len(textline) == 0:
+            continue
+
         ctrl = transform(textline, obj)
         
         if ctrl[1] != '|':
@@ -44,12 +51,37 @@ def template(filename, obj=None):
         result += '</' + str(tags[i]) + '>'
     return result
 
-def spaces(text):
-    result = 0
-    for i in range(len(text)):
-        if text[i] != ' ':
-            result = i
-            break
+def inject(text):
+    local = os.getcwd()
+    includes = []
+    result = []
+    for textline in text:
+        if len(textline.strip()) == 0:
+            continue
+
+        aux = textline.strip().split(' ', 1)
+        if aux[0].strip() == 'include' and len(aux) == 2:
+            includes.append(aux[1])
+            continue
+
+        if substring(textline.strip(),0,1) == '+':
+            if len(includes) == 0:
+                break
+
+            indicative = substring(textline.strip(),1,len(textline.strip())).strip()
+            space = ''
+            for i in range(spaces(textline)):
+                space = space + ' '
+
+            for i in range(0, len(includes)):
+                line = includes[i].split('/')
+                if line[-1] == indicative:
+                    apparq = open(local + '/' + includes[i] + '.suc', 'r')
+                    lines = inject(apparq.readlines())
+                    for y in range(len(lines)):
+                        result.append(space + lines[y] + '\n')
+        else:
+            result.append(textline)
     return result
 
 def transform(text, obj=None):
@@ -82,6 +114,14 @@ def transform(text, obj=None):
     result = '<' + tag + properties + '>' + txt
 
     return [result, tag]
+
+def spaces(text):
+    result = 0
+    for i in range(len(text)):
+        if text[i] != ' ':
+            result = i
+            break
+    return result
 
 def instr(text, char):
     result = 0
