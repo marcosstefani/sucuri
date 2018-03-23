@@ -6,7 +6,7 @@ Install and update using [pip](https://pip.pypa.io/en/stable/quickstart/):
 > pip install sucuri
 
 ## Creating a Sucuri Template
-Example of code:
+- Example of code:
 ```
 html
     body
@@ -48,7 +48,7 @@ Result:
 ```
 <h1>Title</h1>
 ```
-Or you can type in more than one line using the | on the lines that are not the same as the tag, see example:
+Or you can type in more than one line using the `|` on the lines that are not the same as the tag, see example:
 ```
 h3 Hello!
     | Text
@@ -64,4 +64,43 @@ Result:
     more than
     one line
 </h3>
+```
+
+### Rendering of data
+We already know (seen in the text above) that we can only use the `template('template_name')` function with a simple `.suc` file, however it is possible to pass information through a JSON to the template and the sucuri will automatically render the data in the proper location, see the example below:
+- Sucuri file:
+```
+html
+    body
+        h1 Hello {a}
+            | Title
+            | More
+        a(href='#') This is my link
+        h3 {b}
+```
+- Python example with data:
+```
+from flask import Flask, render_template_string
+from sucuri import rendering
+
+app = Flask(__name__)
+
+@app.route("/")
+def index():
+    # template = rendering.template('template.suc')
+    template = rendering.template('template_data.suc',{"a": 1, "b": "Hello!"})
+    return render_template_string(template)
+```
+- Result:
+```
+<html>
+    <body>
+        <h1>Hello 1
+        Title
+        More
+        </h1>
+        <a href="#">This is my link</a>
+        <h3>Hello!</h3>
+    </body>
+</html>
 ```

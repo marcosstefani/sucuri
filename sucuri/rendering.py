@@ -1,6 +1,6 @@
 import json, os
 
-def template(filename):
+def template(filename, obj=None):
     local = os.getcwd()
     arq = open(local + '/' + filename, 'r')
     text = arq.readlines()
@@ -10,7 +10,7 @@ def template(filename):
     result = ''
 
     for textline in text :
-        ctrl = transform(textline)
+        ctrl = transform(textline, obj)
         
         if ctrl[1] != '|':
             tags.append(ctrl[1])
@@ -52,11 +52,21 @@ def spaces(text):
             break
     return result
 
-def transform(text):
+def transform(text, obj=None):
     msg = text.strip()
-    tag = text.strip()
     properties = ''
     txt = ''
+
+    if obj:
+        while instr(msg, '{') > 0:
+            data = substring(msg, instr(msg, '{'), instr(msg, '}') +1)
+            elem = substring(data, 1, len(data)-1).strip()
+            if elem in obj:
+                msg = msg.replace(data, str(obj[elem]))
+
+    tag = msg
+
+    print(msg)
 
     if '(' in msg:
         tag = substring(msg, 0, instr(msg, '('))
