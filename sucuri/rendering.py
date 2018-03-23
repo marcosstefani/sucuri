@@ -66,8 +66,6 @@ def transform(text, obj=None):
 
     tag = msg
 
-    print(msg)
-
     if '(' in msg:
         tag = substring(msg, 0, instr(msg, '('))
         properties = ' ' + substring(msg, instr(msg, '(') +1, instr(msg, ')'))
