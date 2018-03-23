@@ -63,6 +63,8 @@ def transform(text, obj=None):
             elem = substring(data, 1, len(data)-1).strip()
             if elem in obj:
                 msg = msg.replace(data, str(obj[elem]))
+            else:
+                msg = msg.replace(data, '')
 
     tag = msg
 
