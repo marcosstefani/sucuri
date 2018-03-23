@@ -1,0 +1,7 @@
+html
+    body
+        h1 Hello {a}
+            | Title
+            | More
+        a(href='#') This is my link
+        h3 {b}
