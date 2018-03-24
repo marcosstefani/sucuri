@@ -1,9 +1,17 @@
-import json, os
+import os
+
+files = {}
+
+def loadfile(filename):
+    if not (filename in files):
+        local = os.getcwd()
+        arq = open(local + '/' + filename, 'r')
+        files[filename] = arq.readlines()
+        arq.close()
+    return files.get(filename)
 
 def template(filename, obj=None):
-    local = os.getcwd()
-    arq = open(local + '/' + filename, 'r')
-    text = arq.readlines()
+    text = loadfile(filename)
     space = 0
     tabulation = 0
     tags = []
@@ -46,7 +54,6 @@ def template(filename, obj=None):
 
         space = spaces(textline)
 
-    arq.close()
     for i in reversed(range(len(tags))):
         result += '</' + str(tags[i]) + '>'
     return result
@@ -76,8 +83,7 @@ def inject(text):
             for i in range(0, len(includes)):
                 line = includes[i].split('/')
                 if line[-1] == indicative:
-                    apparq = open(local + '/' + includes[i] + '.suc', 'r')
-                    lines = inject(apparq.readlines())
+                    lines = loadfile(includes[i] + '.suc')
                     for y in range(len(lines)):
                         result.append(space + lines[y] + '\n')
         else:
