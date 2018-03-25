@@ -1,4 +1,3 @@
-<a href="#"><img src="https://user-images.githubusercontent.com/16294901/37826760-892cd0de-2e73-11e8-8ea1-2afc390c2ac0.png" height="300" align="right"></a>
 # Sucuri
 Simple and efficient template engine for Python projects inspired by [PugJS](https://pugjs.org)
 
@@ -38,7 +37,7 @@ def index():
     return render_template_string(template)
 ```
 
-As can be seen in the example above, the template in the example is loaded from a file named `template.suc` which is in the project's root directory, however it could be in any project directory, such as `templates/template.suc` if you include a folder to group the templates.
+As can be seen in the example above, the template in the example is loaded from a file named `template.suc` which is in the project's root directory, however it could be in any project directory, such as `templates/template.suc` if you include a folder to group the templates. At the first access to the archive, it will take care of storing it in memory, thus making access to information less costly and more efficient. 
 
 ### Text
 In sucuri, texts are described in two ways. It can be written after the declaration of the tag such as:
@@ -65,6 +64,20 @@ Result:
     more than
     one line
 </h3>
+```
+
+### Attributes
+Just as in HTML the attributes in the sucuri must be separated by space and unlike the PugJS must be in a row only and can not be separated by commas. They must necessarily be enclosed in parentheses. See examples of the use of attributes below:
+```
+a(href='google.com') Google
+a(class='button' href='google.com') Google
+div(class='div-class')
+```
+- Result:
+```
+<a href="google.com">Google</a>
+<a class="button" href="google.com">Google</a>
+<div class="div-class"></div>
 ```
 
 ### Rendering of data
