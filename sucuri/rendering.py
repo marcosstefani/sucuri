@@ -17,10 +17,12 @@ def template(filename, obj=None):
     tags = []
     result = ''
     
-    newtext = inject(text)
+    text = inject(text)
+    if obj:
+        text = addrules(text, obj)
 
-    for x in range(0, len(newtext)):
-        textline = newtext[x]
+    for x in range(0, len(text)):
+        textline = text[x]
         
         if len(textline) == 0:
             continue
@@ -121,6 +123,47 @@ def transform(text, obj=None):
 
     return [result, tag]
 
+def addrules(text, obj):
+    result = []
+    rfor = False
+    line = 0
+    block = []
+    var = {}
+    for textline in text:
+        if '<' in textline and instr(textline, '>') > instr(textline, '<'):
+            rule = ruletxt(textline)
+            part = rule.split(' ')
+            while '' in part:
+                part.remove('')
+            
+            if 'for' in rule and ' in ' in rule and len(part) == 4 and part[3] in obj and isinstance(obj[part[3]], list):
+                rfor = True
+                var['item'] = part[1]
+                var['list'] = obj[part[3]]
+            elif 'endfor' == rule:
+                rfor = False
+            continue
+                
+        elif rfor:
+            block.append(textline)
+            continue
+
+        if len(block) > 0 and rfor == False:
+            l = var.get('list')
+            for x in range(0, len(l)):
+                for y in range (0, len(block)):
+                    i = '#' + var.get('item')
+                    if i in block[y]:
+                        result.append(block[y].replace(i, str(l[x])))
+                    else:
+                        result.append(block[y])
+            block = []
+            var = {}
+        result.append(textline)
+        
+        line += 1
+    return result
+
 def spaces(text):
     result = 0
     for i in range(len(text)):
@@ -148,3 +191,6 @@ def substring(text, ini, end):
         else:
             result = text[ini:]
     return result
+
+def ruletxt(textline):
+    return substring(textline, instr(textline, '<') +1, instr(textline, '>')).strip()
