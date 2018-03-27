@@ -87,7 +87,7 @@ def inject(text):
                 if line[-1] == indicative:
                     lines = loadfile(includes[i] + '.suc')
                     for y in range(len(lines)):
-                        result.append(space + lines[y] + '\n')
+                        result.append(space + lines[y])
         else:
             result.append(textline)
     return result
@@ -129,6 +129,7 @@ def addrules(text, obj):
     line = 0
     block = []
     var = {}
+    
     for textline in text:
         if '<' in textline and instr(textline, '>') > instr(textline, '<'):
             rule = ruletxt(textline)
@@ -140,14 +141,13 @@ def addrules(text, obj):
                 rfor = True
                 var['item'] = part[1]
                 var['list'] = obj[part[3]]
+                continue
             elif 'endfor' == rule:
                 rfor = False
-            continue
                 
         elif rfor:
             block.append(textline)
             continue
-
         if len(block) > 0 and rfor == False:
             l = var.get('list')
             for x in range(0, len(l)):
@@ -159,7 +159,8 @@ def addrules(text, obj):
                         result.append(block[y])
             block = []
             var = {}
-        result.append(textline)
+        if not ('endfor' in textline):
+            result.append(textline)
         
         line += 1
     return result
