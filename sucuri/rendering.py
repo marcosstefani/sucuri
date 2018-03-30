@@ -1,6 +1,7 @@
 import os
 
 files = {}
+rules = []
 
 def loadfile(filename):
     if not (filename in files):
@@ -17,6 +18,16 @@ def template(filename, obj=None):
     tags = []
     result = ''
     
+    teste = []
+    code = """
+for a in range(len(obj['var'])):
+    teste.append(obj['var'][a])
+"""
+    print(code)
+    exec(code)
+
+    print(teste)
+
     text = inject(text)
     if obj:
         text = addrules(text, obj)
@@ -125,46 +136,71 @@ def transform(text, obj=None):
 
 def addrules(text, obj):
     result = []
-    rfor = False
-    line = 0
-    block = []
-    var = {}
-    
-    for textline in text:
-        if '<' in textline and instr(textline, '>') > instr(textline, '<'):
-            rule = ruletxt(textline)
-            part = rule.split(' ')
-            while '' in part:
-                part.remove('')
-            
-            if 'for' in rule and ' in ' in rule and len(part) == 4 and part[3] in obj and isinstance(obj[part[3]], list):
-                rfor = True
-                var['item'] = part[1]
-                var['list'] = obj[part[3]]
-                continue
-            elif 'endfor' == rule:
-                rfor = False
-                
-        elif rfor:
-            block.append(textline)
-            continue
-        if len(block) > 0 and rfor == False:
-            l = var.get('list')
-            for x in range(0, len(l)):
-                for y in range (0, len(block)):
-                    i = '#' + var.get('item')
-                    if i in block[y]:
-                        result.append(block[y].replace(i, str(l[x])))
-                    else:
-                        result.append(block[y])
-            block = []
-            var = {}
-        if not ('endfor' in textline):
-            result.append(textline)
-        
-        line += 1
-    return result
+    space = 0
+    tabulation = ''
 
+    for textline in text:
+        rule = {}
+        ctrl = 1
+
+        if space == 0 and spaces(textline) > 0 and tabulation == '':
+            for i in range(spaces(textline)):
+                tabulation = tabulation + ' '
+
+        if '<' in textline and instr(textline, '>') > instr(textline, '<'):
+            ruletext = ruletxt(textline)
+            ruleline = ruletext.split(' ')
+            space = spaces(textline)
+
+            if not ('end' in ruleline[0]):
+                rule['id'] = ctrl
+                rule['space'] = space
+                rule['type'] = ruleline[0]
+                rule['rule'] = ruletext
+                rule['processing'] = True
+                rule['text'] = []
+                rules.append(rule)
+                result.append('<' + str(ctrl) + '>')
+
+                ctrl += 1
+                continue
+        
+        # if len(block) > 0 and rowfor == False:
+
+        opened = [elem for elem in rules if elem['space'] == space and elem['type'] == 'for' and elem['processing'] == True]
+
+        if len(opened) > 0:
+            if 'endfor' in textline:
+                opened[0]['processing'] = False
+
+            else:
+                opened[0]['text'].append(textline)
+            
+            for a in range(len(rules)):
+                if rules[a]['space'] == opened[0]['space'] and rules[a]['type'] == opened[0]['type'] and rules[a]['processing'] == True:
+                    rules[a] = opened[0]
+        else:
+            result.append(textline)
+
+    if len(rules) > 0:
+        for textline in result:
+            for a in range(len(rules)):
+                if textline.strip() == '<' + str(rules[a]['id']) + '>':
+                    if rules[a]['type'] == 'for':
+                        rule = rules[a]['rule'].split(' ')
+                        stxt = ''
+
+                        ruletext = 'for ' + rule[1] + " in range(len(obj['" + rule[3] + "'])):\n"
+                        
+                        for x in range(len(rules[a]['text'])):
+                            text = rules[a]['text'][x].replace('\n','')
+                            text = text.replace('#' + rule[1], "' + str(obj['" + rule[3] + "'][" + rule[1] + "]) + '")
+                            ruletext = ruletext + tabulation + "result.append('" + text + "')" + '\n'
+                        
+                        exec(ruletext)
+                        
+    return result
+        
 def spaces(text):
     result = 0
     for i in range(len(text)):
@@ -194,4 +230,7 @@ def substring(text, ini, end):
     return result
 
 def ruletxt(textline):
-    return substring(textline, instr(textline, '<') +1, instr(textline, '>')).strip()
+    result = substring(textline, instr(textline, '<') +1, instr(textline, '>')).strip()
+    while '  ' in result:
+        result = result.replace('  ', ' ')
+    return result.strip()
