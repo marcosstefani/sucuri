@@ -1,7 +1,6 @@
 import os
 
 files = {}
-rules = []
 
 def loadfile(filename):
     if not (filename in files):
@@ -17,16 +16,6 @@ def template(filename, obj=None):
     tabulation = 0
     tags = []
     result = ''
-    
-    teste = []
-    code = """
-for a in range(len(obj['var'])):
-    teste.append(obj['var'][a])
-"""
-    print(code)
-    exec(code)
-
-    print(teste)
 
     text = inject(text)
     if obj:
@@ -72,7 +61,6 @@ for a in range(len(obj['var'])):
     return result
 
 def inject(text):
-    local = os.getcwd()
     includes = []
     result = []
     for textline in text:
@@ -137,68 +125,86 @@ def transform(text, obj=None):
 def addrules(text, obj):
     result = []
     space = 0
-    tabulation = ''
+    line = 0
+    blocking = False
+    spaceBlock = 0
 
     for textline in text:
         rule = {}
-        ctrl = 1
+        line += 1
 
-        if space == 0 and spaces(textline) > 0 and tabulation == '':
-            for i in range(spaces(textline)):
-                tabulation = tabulation + ' '
-
-        if '<' in textline and instr(textline, '>') > instr(textline, '<'):
+        if isRule(textline):
             ruletext = ruletxt(textline)
             ruleline = ruletext.split(' ')
             space = spaces(textline)
 
-            if not ('end' in ruleline[0]):
-                rule['id'] = ctrl
+            if not ('end' in ruleline[0]) and not blocking:
                 rule['space'] = space
                 rule['type'] = ruleline[0]
                 rule['rule'] = ruletext
-                rule['processing'] = True
-                rule['text'] = []
-                rules.append(rule)
-                result.append('<' + str(ctrl) + '>')
-
-                ctrl += 1
-                continue
-        
-        # if len(block) > 0 and rowfor == False:
-
-        opened = [elem for elem in rules if elem['space'] == space and elem['type'] == 'for' and elem['processing'] == True]
-
-        if len(opened) > 0:
-            if 'endfor' in textline:
-                opened[0]['processing'] = False
-
-            else:
-                opened[0]['text'].append(textline)
+                blocking = True
+                spaceBlock = space
+                block = ruleblock(text, line - 1, rule, obj)
+                
+                if len(block) > 0:
+                    for blocktext in block:
+                        result.append(blocktext)
+                
             
-            for a in range(len(rules)):
-                if rules[a]['space'] == opened[0]['space'] and rules[a]['type'] == opened[0]['type'] and rules[a]['processing'] == True:
-                    rules[a] = opened[0]
-        else:
+            elif 'end' in ruleline[0] and space == spaceBlock:
+                blocking = False
+        
+            continue
+
+        if blocking and not isRule(textline):
+            continue
+
+        result.append(textline)
+    
+    return result
+
+def ruleblock(text, line, rule, obj):
+    result = []
+    newline = 0
+    space = 0
+    for textline in text:
+        newline += 1
+        
+        if newline -1 < line:
+            continue
+
+        if not isRule(textline) and space == spaces(textline):
             result.append(textline)
+        else:
+            if newline -1 == line:
+                space = spaces(textline)
+                continue
+            
+            ruletext = ruletxt(textline)
+            newrule = {}
 
-    if len(rules) > 0:
-        for textline in result:
-            for a in range(len(rules)):
-                if textline.strip() == '<' + str(rules[a]['id']) + '>':
-                    if rules[a]['type'] == 'for':
-                        rule = rules[a]['rule'].split(' ')
-                        stxt = ''
+            if isRule(textline) and space < spaces(textline) and not'end' in textline:
+                newrule['space'] = space
+                newrule['type'] = ruletext.split(' ')[0]
+                newrule['rule'] = ruletext
+                newblock = ruleblock(text, newline - 1, newrule, obj)
+                for newtext in newblock:
+                    result.append(newtext)
 
-                        ruletext = 'for ' + rule[1] + " in range(len(obj['" + rule[3] + "'])):\n"
-                        
-                        for x in range(len(rules[a]['text'])):
-                            text = rules[a]['text'][x].replace('\n','')
-                            text = text.replace('#' + rule[1], "' + str(obj['" + rule[3] + "'][" + rule[1] + "]) + '")
-                            ruletext = ruletext + tabulation + "result.append('" + text + "')" + '\n'
-                        
-                        exec(ruletext)
-                        
+            if space == spaces(textline) and 'end' + rule['type'] in textline:
+                splited = rule['rule'].split(' ')
+                if splited[0] == 'for':
+                    textblock = 'for ' + splited[1] + " in range(len(obj['" + splited[3] + "'])):\n"
+                    newresult = []
+                    for x in range(len(result)):
+                        text = result[x].replace('\n','')
+                        text = text.replace('#' + splited[1], "' + str(obj['" + splited[3] + "'][" + splited[1] + "]) + '")
+                        textblock = textblock + "    newresult.append('" + text + "')" + '\n'
+                    exec(textblock)
+                    if len(newresult) > 0:
+                        result = newresult
+
+                return result
     return result
         
 def spaces(text):
@@ -234,3 +240,6 @@ def ruletxt(textline):
     while '  ' in result:
         result = result.replace('  ', ' ')
     return result.strip()
+
+def isRule(textline):
+    return '<' in textline and instr(textline, '>') > instr(textline, '<')
