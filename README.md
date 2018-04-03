@@ -173,3 +173,83 @@ def index():
     </body>
 </html>
 ```
+
+### Loop (for)
+Sucuri has a loop in collections of objects, so it is necessary to use the object that has this characteristic as a parameter and to use the information in that collection. See the example below:
+- Sucuri file (`template_include.suc`):
+```
+include inc/link
+include inc/list
+
+html
+    body
+        h1 Hello
+            | Title
+            | More
+        +link
+        h1 Test
+        +list
+```
+- File inside the folder `inc` called `link.suc` (`inc/link.suc`):
+```
+a(href='#') {text}
+```
+- File inside the folder `inc` called `list.suc` (`inc/list.suc`):
+```
+ul
+    <for a in var>
+    li Value #a
+    h1 test
+    ul
+        <for w in var>
+        li Another #w
+        <endfor>
+    <endfor>
+```
+- Result:
+```
+<html>
+    <body>
+        <h1>Hello
+            Title
+            More
+        </h1>
+        <a href="#">Hello! I'm here!</a>
+        <h1>Test</h1>
+        <ul>
+            <li>Value 1</li>
+            <h1>test</h1>
+            <ul>
+                <li>Another 1</li>
+                <li>Another 2</li>
+                <li>Another 3</li>
+                <li>Another 4</li>
+            </ul>
+            <li>Value 2</li>
+            <h1>test</h1>
+            <ul>
+                <li>Another 1</li>
+                <li>Another 2</li>
+                <li>Another 3</li>
+                <li>Another 4</li>
+            </ul>
+            <li>Value 3</li>
+            <h1>test</h1>
+            <ul>
+                <li>Another 1</li>
+                <li>Another 2</li>
+                <li>Another 3</li>
+                <li>Another 4</li>
+            </ul>
+            <li>Value 4</li>
+            <h1>test</h1>
+            <ul>
+                <li>Another 1</li>
+                <li>Another 2</li>
+                <li>Another 3</li>
+                <li>Another 4</li>
+            </ul>
+        </ul>
+    </body>
+</html>
+```

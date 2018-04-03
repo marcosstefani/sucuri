@@ -16,11 +16,13 @@ def template(filename, obj=None):
     tabulation = 0
     tags = []
     result = ''
-    
-    newtext = inject(text)
 
-    for x in range(0, len(newtext)):
-        textline = newtext[x]
+    text = inject(text)
+    if obj:
+        text = addrules(text, obj)
+
+    for x in range(0, len(text)):
+        textline = text[x]
         
         if len(textline) == 0:
             continue
@@ -59,7 +61,6 @@ def template(filename, obj=None):
     return result
 
 def inject(text):
-    local = os.getcwd()
     includes = []
     result = []
     for textline in text:
@@ -85,7 +86,7 @@ def inject(text):
                 if line[-1] == indicative:
                     lines = loadfile(includes[i] + '.suc')
                     for y in range(len(lines)):
-                        result.append(space + lines[y] + '\n')
+                        result.append(space + lines[y])
         else:
             result.append(textline)
     return result
@@ -121,6 +122,91 @@ def transform(text, obj=None):
 
     return [result, tag]
 
+def addrules(text, obj):
+    result = []
+    space = 0
+    line = 0
+    blocking = False
+    spaceBlock = 0
+
+    for textline in text:
+        rule = {}
+        line += 1
+
+        if isRule(textline):
+            ruletext = ruletxt(textline)
+            ruleline = ruletext.split(' ')
+            space = spaces(textline)
+
+            if not ('end' in ruleline[0]) and not blocking:
+                rule['space'] = space
+                rule['type'] = ruleline[0]
+                rule['rule'] = ruletext
+                blocking = True
+                spaceBlock = space
+                block = ruleblock(text, line - 1, rule, obj)
+                
+                if len(block) > 0:
+                    for blocktext in block:
+                        result.append(blocktext)
+                
+            
+            elif 'end' in ruleline[0] and space == spaceBlock:
+                blocking = False
+        
+            continue
+
+        if blocking and not isRule(textline):
+            continue
+
+        result.append(textline)
+    
+    return result
+
+def ruleblock(text, line, rule, obj):
+    result = []
+    newline = 0
+    space = 0
+    for textline in text:
+        newline += 1
+        
+        if newline -1 < line:
+            continue
+
+        if not isRule(textline) and space == spaces(textline):
+            result.append(textline)
+        else:
+            if newline -1 == line:
+                space = spaces(textline)
+                continue
+            
+            ruletext = ruletxt(textline)
+            newrule = {}
+
+            if isRule(textline) and space < spaces(textline) and not'end' in textline:
+                newrule['space'] = space
+                newrule['type'] = ruletext.split(' ')[0]
+                newrule['rule'] = ruletext
+                newblock = ruleblock(text, newline - 1, newrule, obj)
+                for newtext in newblock:
+                    result.append(newtext)
+
+            if space == spaces(textline) and 'end' + rule['type'] in textline:
+                splited = rule['rule'].split(' ')
+                if splited[0] == 'for':
+                    textblock = 'for ' + splited[1] + " in range(len(obj['" + splited[3] + "'])):\n"
+                    newresult = []
+                    for x in range(len(result)):
+                        text = result[x].replace('\n','')
+                        text = text.replace('#' + splited[1], "' + str(obj['" + splited[3] + "'][" + splited[1] + "]) + '")
+                        textblock = textblock + "    newresult.append('" + text + "')" + '\n'
+                    exec(textblock)
+                    if len(newresult) > 0:
+                        result = newresult
+
+                return result
+    return result
+        
 def spaces(text):
     result = 0
     for i in range(len(text)):
@@ -148,3 +234,12 @@ def substring(text, ini, end):
         else:
             result = text[ini:]
     return result
+
+def ruletxt(textline):
+    result = substring(textline, instr(textline, '<') +1, instr(textline, '>')).strip()
+    while '  ' in result:
+        result = result.replace('  ', ' ')
+    return result.strip()
+
+def isRule(textline):
+    return '<' in textline and instr(textline, '>') > instr(textline, '<')
