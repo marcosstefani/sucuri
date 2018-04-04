@@ -1,3 +1,4 @@
++<a href="#"><img src="https://user-images.githubusercontent.com/16294901/37826760-892cd0de-2e73-11e8-8ea1-2afc390c2ac0.png" height="300" align="right"></a>
 # Sucuri
 Simple and efficient template engine for Python projects inspired by [PugJS](https://pugjs.org)
 
