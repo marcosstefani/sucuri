@@ -266,3 +266,116 @@ ul
     </body>
 </html>
 ```
+
+### Injecting Style (css) or Script (js)
+To inject style or script into your html, the sucuri uses the style command that should come before the commands that will translate the html, in this case along with the import of the file however with the `style` tag for `css` and the `script` tag for `js` files.
+- Sucuri file (`template.suc`):
+```
+include inc/link
+include inc/list
+style static/css/style
+script static/js/script
+
+html
+    body
+        h1 Hello
+            | Title
+            | More
+        +link
+        h1 Test
+        +list
+```
+
+- Include List:
+```
+style static/css/list
+ul
+    <for a in var>
+    li Value #a
+    h1(class='h1-red') test
+    ul
+        <for w in var>
+        li Another #w
+        <endfor>
+    <endfor>
+```
+
+- `style` static/css/style.css
+```
+h1 {
+    color: blue;
+}
+```
+
+- `style` static/css/list.css
+```
+.h1-red {
+    color: red;
+}
+```
+
+- `script` static/js/script.js
+```
+function example() {
+    console.log('test');
+}
+```
+
+- Result:
+```
+<html>
+   <head></head>
+   <body>
+      <h1>Hello
+         Title
+         More
+      </h1>
+      <a href="#">Hello! I'm here!</a>
+      <h1>Test</h1>
+      <ul>
+         <li>Value 1</li>
+         <h1 class="h1-red">test</h1>
+         <ul>
+            <li>Another 1</li>
+            <li>Another 2</li>
+            <li>Another 3</li>
+            <li>Another 4</li>
+         </ul>
+         <li>Value 2</li>
+         <h1 class="h1-red">test</h1>
+         <ul>
+            <li>Another 1</li>
+            <li>Another 2</li>
+            <li>Another 3</li>
+            <li>Another 4</li>
+         </ul>
+         <li>Value 3</li>
+         <h1 class="h1-red">test</h1>
+         <ul>
+            <li>Another 1</li>
+            <li>Another 2</li>
+            <li>Another 3</li>
+            <li>Another 4</li>
+         </ul>
+         <li>Value 4</li>
+         <h1 class="h1-red">test</h1>
+         <ul>
+            <li>Another 1</li>
+            <li>Another 2</li>
+            <li>Another 3</li>
+            <li>Another 4</li>
+         </ul>
+      </ul>
+      <style>h1 {
+         color: blue;
+         }.h1-red {
+         color: red;
+         }
+      </style>
+      <script>function example() {
+         console.log('test');
+         }
+      </script>
+   </body>
+</html>
+```
