@@ -1,6 +1,8 @@
 import os
 
 files = {}
+styles = []
+scripts = []
 
 def loadfile(filename):
     if not (filename in files):
@@ -58,6 +60,24 @@ def template(filename, obj=None):
 
     for i in reversed(range(len(tags))):
         result += '</' + str(tags[i]) + '>'
+
+    
+    if len(styles) > 0:
+        result += '<style>'
+        for s in range(len(styles)):
+            lines = loadfile(styles[s])
+            for y in range(len(lines)):
+                result += lines[y]
+        result += '</style>'
+    
+    if len(scripts) > 0:
+        result += '<script>'
+        for s in range(len(scripts)):
+            lines = loadfile(scripts[s])
+            for y in range(len(lines)):
+                result += lines[y]
+        result += '</script>'
+
     return result
 
 def inject(text):
@@ -70,6 +90,16 @@ def inject(text):
         aux = textline.strip().split(' ', 1)
         if aux[0].strip() == 'include' and len(aux) == 2:
             includes.append(aux[1])
+            continue
+        
+        if aux[0].strip() == 'style' and len(aux) == 2:
+            filename = aux[1] + '.css'
+            styles.append(filename)
+            continue
+        
+        if aux[0].strip() == 'script' and len(aux) == 2:
+            filename = aux[1] + '.js'
+            scripts.append(filename)
             continue
 
         if substring(textline.strip(),0,1) == '+':
@@ -84,7 +114,8 @@ def inject(text):
             for i in range(0, len(includes)):
                 line = includes[i].split('/')
                 if line[-1] == indicative:
-                    lines = loadfile(includes[i] + '.suc')
+                    lines = inject(loadfile(includes[i] + '.suc'))
+                    
                     for y in range(len(lines)):
                         result.append(space + lines[y])
         else:
@@ -196,10 +227,12 @@ def ruleblock(text, line, rule, obj):
                 if splited[0] == 'for':
                     textblock = 'for ' + splited[1] + " in range(len(obj['" + splited[3] + "'])):\n"
                     newresult = []
+                    
                     for x in range(len(result)):
                         text = result[x].replace('\n','')
-                        text = text.replace('#' + splited[1], "' + str(obj['" + splited[3] + "'][" + splited[1] + "]) + '")
-                        textblock = textblock + "    newresult.append('" + text + "')" + '\n'
+                        text = text.replace('#' + splited[1], '''" + str(obj["''' + splited[3] + '''"][''' + splited[1] + ''']) + "''')
+                        textblock = textblock + '''    newresult.append("''' + text + '''")''' + '\n'
+                    
                     exec(textblock)
                     if len(newresult) > 0:
                         result = newresult
