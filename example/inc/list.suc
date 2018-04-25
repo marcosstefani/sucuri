@@ -1,3 +1,10 @@
+style static/css/list
 ul
-    li A
-    li B
+    <for a in var>
+    li Value #a
+    h1(class='h1-red') test
+    ul
+        <for w in var>
+        li Another #w
+        <endfor>
+    <endfor>

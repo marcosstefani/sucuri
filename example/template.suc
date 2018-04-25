@@ -1,4 +1,13 @@
+include inc/link
+include inc/list
+style static/css/style
+script static/js/script
+
 html
     body
-        h1 Title
-        a(href='#') This is my link
+        h1 Hello
+            | Title
+            | More
+        +link
+        h1 Test
+        +list
