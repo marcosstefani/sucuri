@@ -1,0 +1,10 @@
+style test/static/css/list
+ul
+    <for a in list>
+    li Value #a
+    h1(class='h1-red') test
+    ul
+        <for w in list>
+        li Another #w
+        <endfor>
+    <endfor>

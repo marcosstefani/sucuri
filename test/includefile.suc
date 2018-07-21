@@ -1,0 +1,9 @@
+include test/inc/link
+include test/inc/list
+
+html
+    body
+        h1 Hello
+        +link
+        h3 Oh Yeahh
+        +list
