@@ -1,5 +1,4 @@
 
 <if x == y>
 h2 The condition is True
-h1 Does this works
 <endif>

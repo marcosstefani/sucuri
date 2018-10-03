@@ -1,13 +1,15 @@
-include example/inc/link
-include example/inc/list
-style example/static/css/style
-script example/static/js/script
+include inc/link
+include inc/list
+include inc/if
+style static/css/style
+script static/js/script
 
 html
     body
         h1 Hello
             | Title
             | More
+        +if
         +link
         h1 Test
         +list

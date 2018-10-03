@@ -1,3 +1,4 @@
+style static/css/list
 ul
     <for a in var>
     li Value #a
