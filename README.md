@@ -175,6 +175,52 @@ def index():
 </html>
 ```
 
+### Condition (if)
+
+It is possible to use conditional statements within Sucuri. Conditions are using the same form as Python's. Hence, the main operators are ```==``` and ```!=```. See an example below:
+- Main file
+```
+from flask import Flask, render_template_string
+from sucuri import rendering
+
+app = Flask(__name__)
+
+@app.route("/")
+def index():
+    template = rendering.template('template_if.suc',{"x": 1, "y": 3})
+    return render_template_string(template)
+```
+- Sucuri file (`template_if.suc`):
+```
+include inc/if
+
+html
+    body
+        h1 Hello
+            | Title
+            | More
+        +if
+```
+
+- File inside the folder `inc` called `if.suc` (`inc/if.suc`):
+```
+<if x != y>
+h2 The condition is True
+<endif>
+```
+- Result:
+```
+<html>
+    <body>
+        <h1>Hello
+            Title
+            More
+        </h1>
+        <h2> The condtition is True </h2>
+    </body>
+</html>
+```
+
 ### Loop (for)
 Sucuri has a loop in collections of objects, so it is necessary to use the object that has this characteristic as a parameter and to use the information in that collection. See the example below:
 - Main file
