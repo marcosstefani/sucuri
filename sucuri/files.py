@@ -29,28 +29,28 @@ class Files:
 
         if obj:
             text = _addrules(text, obj)
-        
+
         for x in range(0, len(text)):
             textline = text[x]
-            
+
             if len(textline) == 0:
                 continue
 
             ctrl = _transform( textline, obj )
 
             textline = text[ x ]
-        
+
             if len( textline ) == 0:
                 continue
 
             ctrl = _transform( textline, obj )
-            
+
             if ctrl[1] != '|':
                 tags.append( ctrl[ 1 ] )
 
                 if space == 0 and _spaces( textline ) > 0:
                     tabulation = _spaces( textline ) - space
-                
+
                 if tabulation > 0 and space >= _spaces(textline):
                     quantity = ( ( space - _spaces( textline ) ) / tabulation ) + 1
 
@@ -63,7 +63,7 @@ class Files:
                         lastreg = len( tags ) -2
                         result += '</' + tags[ lastreg ] + '>'
                         tags.pop( lastreg )
-            
+
             else:
                 msg = textline.strip()
                 ctrl[0] = msg.replace('|','\n')
@@ -82,7 +82,7 @@ class Files:
 
                 for y in range(len(lines)):
                     result += lines[y]
-            result += '</style>'
+            result += '</style>\n'
         
         if len(self.scripts) > 0:
             result += '<script>'
@@ -90,7 +90,7 @@ class Files:
                 lines = self.cashed.get( self.scripts[s] )
                 for y in range(len(lines)):
                     result += lines[y]
-            result += '</script>'
+            result += '</script>\n'
 
         return result
 
@@ -106,13 +106,13 @@ class Files:
                 self.add( aux[ 1 ] + '.suc' )
                 includes.append( aux[1] )
                 continue
-            
+
             if aux[ 0 ].strip() == 'style' and len( aux ) == 2:
                 name = aux[ 1 ] + '.css'
                 self.add( name )
                 self.styles.append( name )
                 continue
-            
+
             if aux[ 0 ].strip() == 'script' and len( aux ) == 2:
                 name = aux[ 1 ] + '.js'
                 self.add( name )
@@ -122,10 +122,10 @@ class Files:
             if _substring( text.strip(), 0, 1 ) == '+':
                 indicative = _substring( text.strip() , 1, len( text.strip() ) ).strip()
                 space = ''
-                
+
                 for i in range(_spaces( text )):
                     space = space + ' '
-                
+
                 for i in range(0, len(includes)):
                     line = includes[i].split('/')
 
@@ -162,13 +162,13 @@ def _transform( text, obj=None ):
         properties = ' ' + _substring( msg, _instr( msg, '(' ) + 1, _instr( msg, ')' ) )
         if _instr( msg, ')') +1 != len( msg ):
             txt = _substring( msg, _instr( msg, ')' ) +2, len( msg ) )
-            
+
     elif ' ' in msg:
         tag = _substring( msg, 0, _instr( msg, ' ' ) )
         if _instr( msg, ' ' ) +1 != len( msg ):
             txt = _substring( msg, _instr( msg, ' ' ) +1, len( msg ) )
 
-    result = '<' + tag + properties + '>' + txt
+    result = '<' + tag + properties + '>\n' + txt
 
     return [result, tag]
 
@@ -195,22 +195,22 @@ def _addrules( text, obj ):
                 blocking = True
                 spaceBlock = space
                 block = _ruleblock(text, line - 1, rule, obj)
-                
+
                 if len(block) > 0:
                     for blocktext in block:
                         result.append(blocktext)
-                
-            
+
+
             elif 'end' in ruleline[0] and space == spaceBlock:
                 blocking = False
-        
+
             continue
 
         if blocking and not _isRule(textline):
             continue
 
         result.append(textline)
-    
+
     return result
 
 def _ruleblock( text, line, rule, obj ):
@@ -219,7 +219,7 @@ def _ruleblock( text, line, rule, obj ):
     space = 0
     for textline in text:
         newline += 1
-        
+
         if newline -1 < line:
             continue
 
@@ -229,7 +229,7 @@ def _ruleblock( text, line, rule, obj ):
             if newline -1 == line:
                 space = _spaces(textline)
                 continue
-            
+
             ruletext = _ruletxt(textline)
             newrule = {}
 
@@ -246,15 +246,25 @@ def _ruleblock( text, line, rule, obj ):
                 if splited[0] == 'for':
                     textblock = 'for ' + splited[1] + " in range(len(obj['" + splited[3] + "'])):\n"
                     newresult = []
-                    
+
                     for x in range(len(result)):
                         text = result[x].replace('\n','')
                         text = text.replace('#' + splited[1], '''" + str(obj["''' + splited[3] + '''"][''' + splited[1] + ''']) + "''')
                         textblock = textblock + '''    newresult.append("''' + text + '''")''' + '\n'
-                    
+
                     exec(textblock)
                     if len(newresult) > 0:
                         result = newresult
+
+                elif splited[0] == 'if':
+                    newresult = []
+                    textblock = "if obj['" + splited[1] + "'] " + splited[2] + " obj['" + splited[3] + "']:\n"
+                    for instruct in result:
+                        textblock += '''    newresult.append("''' + instruct.replace('\n', '') + '''")''' + '\n'
+                    exec(textblock)
+                    result = newresult
+
+
 
                 return result
     return result

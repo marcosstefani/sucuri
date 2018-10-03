@@ -1,7 +1,7 @@
-include inc/link
-include inc/list
-style static/css/style
-script static/js/script
+include example/inc/link
+include example/inc/list
+style example/static/css/style
+script example/static/js/script
 
 html
     body
