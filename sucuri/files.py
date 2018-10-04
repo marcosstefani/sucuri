@@ -124,7 +124,7 @@ class Files:
                 space = ''
 
                 for i in range(_spaces( text )):
-                    space = space + ' '
+                    space += ' '
 
                 for i in range(0, len(includes)):
                     line = includes[i].split('/')
