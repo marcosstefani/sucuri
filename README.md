@@ -335,8 +335,6 @@ def index():
 html
     body
         h1 Hello
-            | Title
-            | More
         list(items)
 ```
 
@@ -345,8 +343,6 @@ html
 <html>
     <body>
         <h1>Hello
-            Title
-            More
         </h1>
         <ul>
             <li> 1 </li>
