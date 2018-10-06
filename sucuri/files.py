@@ -146,6 +146,19 @@ def _transform( text, obj=None ):
     properties = ''
     txt = ''
 
+    if msg.split('(')[0] == "list":
+        params = msg.split('(')[1].split(')')
+        n = "\n"
+        result = "<ul>" + n
+        newresult = []
+        textblock = "for value in obj['" + params[0] + "']:\n"
+        textblock += "    newresult.append('<li> ' + str(value) + ' </li>' + n)\n"
+
+        exec(textblock)
+        for line in newresult:
+            result += line
+        return [result, "ul"]
+
     if obj:
         while _instr( msg, '{' ) > 0:
             data = _substring( msg, _instr( msg, '{' ), _instr( msg, '}' ) + 1 )

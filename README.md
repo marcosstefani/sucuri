@@ -314,6 +314,51 @@ ul
 </html>
 ```
 
+### Lists
+
+It is possible to generate unordered bullet list (```<ul>```) with Sucuri. This requires that the Python list given as argument is only a one dimension list. See an example below:
+- Main file
+```
+from flask import Flask, render_template_string
+from sucuri import rendering
+
+app = Flask(__name__)
+
+@app.route("/")
+def index():
+    template = rendering.template('template_list.suc',{"items": [1, "two", 3, "Five"]})
+    return render_template_string(template)
+```
+- Sucuri file (`template_list.suc`):
+```
+
+html
+    body
+        h1 Hello
+            | Title
+            | More
+        list(items)
+```
+
+- Result:
+```
+<html>
+    <body>
+        <h1>Hello
+            Title
+            More
+        </h1>
+        <ul>
+            <li> 1 </li>
+            <li> two </li>
+            <li> 3 </li>
+            <li> Five </li>
+        </ul>
+    </body>
+</html>
+```
+
+
 ### Injecting Style (css) or Script (js)
 To inject style or script into your html, the sucuri uses the style command that should come before the commands that will translate the html, in this case along with the import of the file however with the `style` tag for `css` and the `script` tag for `js` files.
 - Sucuri file (`template.suc`):
