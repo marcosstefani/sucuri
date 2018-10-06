@@ -56,12 +56,14 @@ class Files:
 
                     if quantity == 0 and len( tags ) > 0 and space > 0:
                         lastreg = len( tags ) -2
-                        result += '</' + tags[ lastreg ] + '>'
+                        if tags[lastreg] != "":
+                            result += '</' + tags[ lastreg ] + '>'
                         tags.pop( lastreg )
 
                     for i in reversed(range(0, int(quantity))):
                         lastreg = len( tags ) -2
-                        result += '</' + tags[ lastreg ] + '>'
+                        if tags[lastreg] != "":
+                            result += '</' + tags[ lastreg ] + '>'
                         tags.pop( lastreg )
 
             else:
@@ -147,17 +149,30 @@ def _transform( text, obj=None ):
     txt = ''
 
     if msg.split('(')[0] == "list":
-        params = msg.split('(')[1].split(')')
+        params = msg.split('(')[1].split(')')[0].split(' ')
         n = "\n"
-        result = "<ul>" + n
-        newresult = []
-        textblock = "for value in obj['" + params[0] + "']:\n"
-        textblock += "    newresult.append('<li> ' + str(value) + ' </li>' + n)\n"
+        if len(params) == 1:
+            result = "<ul>" + n
+            newresult = []
+            textblock = "for value in obj['" + params[0] + "']:\n"
+            textblock += "    newresult.append('<li> ' + str(value) + ' </li>' + n)\n"
 
-        exec(textblock)
-        for line in newresult:
-            result += line
-        return [result, "ul"]
+            exec(textblock)
+            for line in newresult:
+                result += line
+            return [result, "ul"]
+
+    elif len(params) == 2:
+            result = ""
+            newresult = []
+            textblock = "for value in obj['" + params[0] + "']:\n"
+            textblock += "    newresult.append(\"<input type=\'checkbox\' id=\'ck-{0}\' {1}> {0} {2}\".format(str(value), \'checked=\"checked\"\' if value in obj[\'" + params[1] + "\'] else \' \', n))\n"
+
+            exec(textblock)
+            for line in newresult:
+                result += line
+            return [result, ""]
+
 
     if obj:
         while _instr( msg, '{' ) > 0:

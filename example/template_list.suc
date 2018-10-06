@@ -5,4 +5,4 @@ html
             | Title
             | More
         list(items)
-        h2 End of the list
+        list(items checked)

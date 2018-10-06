@@ -316,7 +316,7 @@ ul
 
 ### Lists
 
-It is possible to generate unordered bullet list (```<ul>```) with Sucuri. This requires that the Python list given as argument is only a one dimension list. See an example below:
+It is possible to generate unordered bullet list (```<ul>```) and checkboxex with Sucuri. This requires that the Python list given as argument is only a one dimension list for unordered lists and two (the list of the items and the list of the checked items) for the checkboxes. See an example below:
 - Main file
 ```
 from flask import Flask, render_template_string
@@ -326,7 +326,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def index():
-    template = rendering.template('template_list.suc',{"items": [1, "two", 3, "Five"]})
+    template = rendering.template('template_list.suc',{"items": [1, "two", 3, "Five"], "checked": [1, "Five"]})
     return render_template_string(template)
 ```
 - Sucuri file (`template_list.suc`):
@@ -335,25 +335,25 @@ def index():
 html
     body
         h1 Hello
-            | Title
-            | More
         list(items)
+        list(items checked)
 ```
 
 - Result:
 ```
 <html>
     <body>
-        <h1>Hello
-            Title
-            More
-        </h1>
+        <h1>Hello</h1>
         <ul>
             <li> 1 </li>
             <li> two </li>
             <li> 3 </li>
             <li> Five </li>
         </ul>
+        <input type="checkbox" id="ck-1" checked="checked">1
+        <input type="checkbox" id="ck-two">two
+        <input type="checkbox" id="ck-3">3
+        <input type="checkbox" id="ck-Five" checked="checked">Five
     </body>
 </html>
 ```
