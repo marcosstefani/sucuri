@@ -343,7 +343,12 @@ html
 ```
 <html>
     <body>
+<<<<<<< HEAD
         <h1>Hello</h1>
+=======
+        <h1>Hello
+        </h1>
+>>>>>>> eb7366d8fc8c65ce6de2a7ab6193a11e6d8fb0e3
         <ul>
             <li> 1 </li>
             <li> two </li>
