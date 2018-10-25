@@ -31,13 +31,6 @@ class Files:
             text = _addrules(text, obj)
 
         for x in range(0, len(text)):
-            textline = text[x]
-
-            if len(textline) == 0:
-                continue
-
-            ctrl = _transform( textline, obj )
-
             textline = text[ x ]
 
             if len( textline ) == 0:
@@ -60,7 +53,7 @@ class Files:
                             result += '</' + tags[ lastreg ] + '>'
                         tags.pop( lastreg )
 
-                    for i in reversed(range(0, int(quantity))):
+                    for _ in reversed(range(0, int(quantity))):
                         lastreg = len( tags ) -2
                         if tags[lastreg] != "":
                             result += '</' + tags[ lastreg ] + '>'
@@ -166,7 +159,9 @@ def _transform( text, obj=None ):
             result = ""
             newresult = []
             textblock = "for value in obj['" + params[0] + "']:\n"
-            textblock += "    newresult.append(\"<input type=\'checkbox\' id=\'ck-{0}\' {1}> {0} {2}\".format(str(value), \'checked=\"checked\"\' if value in obj[\'" + params[1] + "\'] else \' \', n))\n"
+            textblock += ("    newresult.append(\"<input type=\'checkbox\' id=\'ck-{0}\' {1}> {0} {2}\""
+                          ".format(str(value), \'checked=\"checked\"\' if value in obj[\'" + params[1] + "\'] "
+                          "else \' \', n))\n")
 
             exec(textblock)
             for line in newresult:
@@ -202,7 +197,6 @@ def _transform( text, obj=None ):
 
 def _addrules( text, obj ):
     result = []
-    space = 0
     line = 0
     blocking = False
     spaceBlock = 0
@@ -331,12 +325,11 @@ def _replace(text, obj=None):
             data = _substring(text, _instr(text, '{'), _instr(text, '}') +1)
             elem = _substring(data, 1, len(data) -1).strip()
             idx = ""
-            if (_instr(elem, '[') > 0 and _instr(elem, ']') > 0):
+            if _instr(elem, '[') > 0 and _instr(elem, ']') > 0:
                 idx = _substring(elem, _instr(elem, '[') +1, _instr(elem, ']'))
                 elem = _substring(elem, 0, _instr(elem, '['))
             if elem in obj:
-                vlr = ""
-                if ( idx == "" ):
+                if idx == "":
                     vlr = str(obj[elem])
                 else:
                     l = obj[elem]
