@@ -162,7 +162,7 @@ def _transform( text, obj=None ):
                 result += line
             return [result, "ul"]
 
-    elif len(params) == 2:
+        elif len(params) == 2:
             result = ""
             newresult = []
             textblock = "for value in obj['" + params[0] + "']:\n"
