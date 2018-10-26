@@ -358,7 +358,44 @@ html
 </html>
 ```
 
+`list()` also takes the optional argument `class`, which can be used to set the class of unordered lists like so:
 
+- Main file
+```
+from flask import Flask, render_template_string
+from sucuri import rendering
+
+app = Flask(__name__)
+
+@app.route("/")
+def index():
+    template = rendering.template('template_list_with_classes.suc',{"items": [1, "two", 3, "Five"]})
+    return render_template_string(template)
+```
+- Sucuri file (`template_list_with_classes.suc`):
+```
+style static/css/list
+
+html
+    body
+        h1 Hello
+        list(items class="ul-squares")
+```
+
+- Result:
+```
+<html>
+    <body>
+        <h1>Hello</h1>
+        <ul class="ul-squares">
+            <li> 1 </li>
+            <li> two </li>
+            <li> 3 </li>
+            <li> Five </li>
+        </ul>
+    </body>
+</html>
+```
 ### Injecting Style (css) or Script (js)
 To inject style or script into your html, the sucuri uses the style command that should come before the commands that will translate the html, in this case along with the import of the file however with the `style` tag for `css` and the `script` tag for `js` files.
 - Sucuri file (`template.suc`):
