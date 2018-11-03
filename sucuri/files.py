@@ -143,9 +143,18 @@ def _transform( text, obj=None ):
 
     if msg.split('(')[0] == "list":
         params = msg.split('(')[1].split(')')[0].split(' ')
+
         n = "\n"
-        if len(params) == 1:
-            result = "<ul>" + n
+
+        for param in params:
+            if 'class=' in param:
+                ul_class = param.split('class=')[1].strip('"')
+                params.remove(param)
+                break
+        else:
+            ul_class = None
+        if len(params) == 1 or ul_class is not None:
+            result = "<ul>" + n if ul_class is None else "<ul class=\"" + ul_class + "\">" + n
             newresult = []
             textblock = "for value in obj['" + params[0] + "']:\n"
             textblock += "    newresult.append('<li> ' + str(value) + ' </li>' + n)\n"
