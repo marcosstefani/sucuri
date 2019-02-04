@@ -9,7 +9,7 @@ class Files:
     def add( self, fileName ):
         if not ( fileName in self.cashed ):
             root = os.getcwd()
-            readFile = open( root + '/' + fileName, 'r' )
+            readFile = open( root + '/' + fileName, 'r' , encoding='utf-8')
             self.cashed[fileName] = readFile.readlines()
             readFile.close()
 
