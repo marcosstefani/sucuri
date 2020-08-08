@@ -1,8 +1,6 @@
 import sys
 sys.path.append('...')
 
-import pytest
-
 from sucuri.element.tag import Tag
 
 def test_should_reflect_when_just_passing_the_tag():
