@@ -4,3 +4,4 @@ sucuri.egg-info/
 dist/
 build/
 *.pyc
+env/
