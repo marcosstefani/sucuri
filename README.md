@@ -508,3 +508,11 @@ function example() {
    </body>
 </html>
 ```
+
+## To contribute:
+- Fork the project
+- If you use linux, I suggest you use virtualenv (not to install anything unnecessary in your environment) and run install the requirements.txt pip packages with the command `pip install -r requirements.txt`
+- Create a branch from the master
+- Add your Git name and username to the AUTHORS file
+- Create unit tests using pytest. Always run all tests with the pytest command in the tests folder of the project: `pytest tests/`
+- Create a Pull Request for the master of the original project (this one)
