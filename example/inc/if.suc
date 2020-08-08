@@ -1,4 +1,0 @@
-
-<if x != y>
-h2 The condition is True
-<endif>

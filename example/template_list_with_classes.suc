@@ -1,6 +1,0 @@
-style static/css/list
-
-html
-    body
-        h1 Hello
-        list(items class="ul-squares")
