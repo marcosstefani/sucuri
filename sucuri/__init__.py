@@ -6,8 +6,10 @@ class Sucuri:
         self.templates = {}
     
     def render(self):
+        self._render_template()
+    
+    def _render_template(self):
         self._add_template(self.file)
-        
         repeat = True
         while repeat:
             temps = set()
