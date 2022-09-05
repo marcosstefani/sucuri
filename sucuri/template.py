@@ -24,4 +24,8 @@ class Template:
         return len(self.presets.include) > 0
         
     def remove_include(self, file):
-        del self.presets.include[file]
+        if file in self.presets.include:
+            del self.presets.include[file]
+        
+    def import_name(self):
+        return '+' + self.file_name.split('/')[-1].split('.')[0]

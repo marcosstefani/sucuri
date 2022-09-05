@@ -11,14 +11,19 @@ class Sucuri:
         repeat = True
         while repeat:
             temps = set()
+            repeat = False
             for template in self.templates.values():
                 if template.has_include():
-                    temps.add(template.presets.include.values())
+                    for temp in template.presets.include.values():
+                        temps.add(temp)
+                    repeat = True
                     continue
-            for temp in temps:
-                self._add_template(temp)
-            repeat = False
+            if temps:
+                for temp in temps:
+                    self._add_template(temp)
     
     def _add_template(self, file):
         template = Template(file)
-        self.templates[template.file_name] = template
+        self.templates[template.import_name()] = template
+        for temp in self.templates.values():
+            temp.remove_include(template.import_name())
