@@ -1,8 +1,0 @@
-include inc/if
-
-html
-    body
-        h1 Hello
-            | Title
-            | More
-        +if

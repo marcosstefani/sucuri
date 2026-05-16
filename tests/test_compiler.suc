@@ -1,0 +1,12 @@
+include inc/link
+style static/css/style
+script static/js/app
+
+html
+    body
+        h1 Hello {name}!
+        +link
+        h2 My List:
+        list(items class="ul-squares")
+        h2 My Checkboxes:
+        list(items checked)

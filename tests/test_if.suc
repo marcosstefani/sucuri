@@ -1,0 +1,8 @@
+html
+    body
+        <if n == 1>
+        h1 Is One
+        <endif>
+        <if n != 1>
+        h1 Not One
+        <endif>

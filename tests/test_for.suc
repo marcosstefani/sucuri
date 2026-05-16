@@ -1,0 +1,6 @@
+html
+    body
+        ul
+            <for i in arr>
+            li Item {i}
+            <endfor>

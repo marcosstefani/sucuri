@@ -1,0 +1,10 @@
+html
+    body
+        ul
+            <for i in arr>
+            li Value #i
+            ul
+                <for j in inner>
+                li Nested {j}
+                <endfor>
+            <endfor>

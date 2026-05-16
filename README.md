@@ -39,6 +39,28 @@ def index():
     return render_template_string(template)
 ```
 
+
+## Command Line Interface (CLI)
+
+Sucuri provides a Command Line Interface (CLI) that allows you to easily process templates directly from your terminal. When you install `sucuri`, the `sucuri` command is automatically registered system-wide.
+
+To compile a `.suc` file locally and optionally pass dynamic JSON data for rendering variables:
+
+```bash
+# Basic compilation (outputs to stdout)
+sucuri build index.suc
+
+# Compilation with output file
+sucuri build index.suc -o index.html
+
+# Compilation passing JSON context variables inline
+sucuri build index.suc --context '{"title": "My Page", "items": ["Item 1", "Item 2"]}' -o index.html
+
+# Compilation using JSON data loaded from another file
+sucuri build index.suc --context context.json -o index.html
+```
+
+
 As can be seen in the example above, the template in the example is loaded from a file named `template.suc` which is in the project's root directory, however it could be in any project directory, such as `templates/template.suc` if you include a folder to group the templates. At the first access to the archive, it will take care of storing it in memory, thus making access to information less costly and more efficient. 
 
 ### Text

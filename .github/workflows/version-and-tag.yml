@@ -1,0 +1,111 @@
+name: Version and Tag Release
+
+on:
+  pull_request_target:
+    types: [closed]
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version without 'v' (example: 1.0.2). Leave empty to auto-increment latest tag."
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: version-and-tag-master
+  cancel-in-progress: false
+
+jobs:
+  version_and_tag:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request_target' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate release push token
+        env:
+          RELEASE_PUSH_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${RELEASE_PUSH_TOKEN:-}" ]; then
+            echo "Secret RELEASE_PUSH_TOKEN is not configured."
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_PUSH_TOKEN }}
+
+      - name: Determine next version
+        id: version
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version || '' }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+
+          RAW_VERSION="${INPUT_VERSION:-}"
+          RAW_VERSION="${RAW_VERSION#v}"
+
+          if [ -n "$RAW_VERSION" ]; then
+            VERSION="$RAW_VERSION"
+          else
+            LAST_TAG="$(git tag --list 'v*' --sort=-v:refname | head -n 1)"
+            if [ -z "$LAST_TAG" ]; then
+              VERSION="1.0.0"
+            else
+              LAST_VERSION="${LAST_TAG#v}"
+              VERSION="$(python -c 'import re,sys; v=sys.argv[1]; assert re.fullmatch(r"\d+(?:\.\d+)*", v), f"Invalid latest tag format: {v}"; p=[int(x) for x in v.split(".")]; p[-1]+=1; print(".".join(map(str,p)))' "$LAST_VERSION")"
+            fi
+          fi
+
+          python -c 'import re,sys; v=sys.argv[1]; assert re.fullmatch(r"\d+(?:\.\d+)*", v), f"Invalid version format: {v}. Use numbers and dots only, like 1.0.2"' "$VERSION"
+          if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+            echo "Tag v$VERSION already exists."
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $VERSION"
+
+      - name: Update version files
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          python -c '
+          import os, re
+          v = os.environ["VERSION"]
+          # Update setup.py
+          t = open("setup.py").read()
+          t = re.sub(r"version=[\x27\x22].*?[\x27\x22]", f"version={repr(v)}", t)
+          open("setup.py", "w").write(t)
+          # Update __init__.py
+          t = open("sucuri/__init__.py").read()
+          t = re.sub(r"__version__\s*=\s*[\x27\x22].*?[\x27\x22]", f"__version__ = {repr(v)}", t)
+          open("sucuri/__init__.py", "w").write(t)
+          '
+
+      - name: Commit and push version bump
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add setup.py sucuri/__init__.py
+          git commit -m "chore: bump version to $VERSION"
+          git push origin master
+
+      - name: Create and push tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          git tag -a "v$VERSION" -m "Release v$VERSION"
+          git push origin "v$VERSION"
