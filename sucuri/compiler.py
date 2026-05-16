@@ -1,0 +1,378 @@
+from lark import Tree, Token
+import re
+import os
+from sucuri.parser import parse_sucuri
+
+class SucuriCompiler:
+    def __init__(self, context=None, base_dir="."):
+        self.context = context or {}
+        self.base_dir = base_dir
+        self.indent_level = 0
+        self.output = []
+        self.styles = []
+        self.scripts = []
+        self.macros = {}
+
+    def compile(self, tree):
+        self.output = []
+        self.styles = []
+        self.scripts = []
+        self.macros = {}
+        self.indent_level = 0
+        
+        # HTML usually has a head/styles section injected before the body
+        # Let's make an initial pass to load macros, if necessary.
+        self._visit(tree)
+        
+        html = "\n".join(self.output)
+        
+        # Glue everything together in HTML style
+        extras = []
+        if self.styles:
+            for style in self.styles:
+                extras.append(f"    <style>{style}</style>")
+        if self.scripts:
+            for script in self.scripts:
+                # The README.md describes inline scripts within style tags (injected along with the final HTML, no external SRCs)
+                extras.append(f"    <script>{script}</script>")
+                
+        if extras:
+            html = html.replace("</body>", "\n".join(extras) + "\n    </body>")
+            if "</body>" not in html:
+                html += "\n" + "\n".join(extras)
+            
+        return html
+
+    def _get_indent(self):
+        return "    " * self.indent_level
+
+    def _render_text(self, text):
+        # Replace variables {var} with values from context
+        def repl(match):
+            var_name = match.group(1)
+            return str(self.context.get(var_name, f"{{{var_name}}}"))
+        
+        # Also replace #loop_var
+        text = re.sub(r'\{([a-zA-Z0-9_]+)\}', repl, text)
+        text = re.sub(r'#([a-zA-Z0-9_]+)', repl, text)
+        return text.strip()
+
+    def _visit(self, node):
+        if isinstance(node, Token):
+            return
+
+        method_name = f'visit_{node.data}'
+        if hasattr(self, method_name):
+            getattr(self, method_name)(node)
+        else:
+            for child in node.children:
+                if child is not None:
+                    self._visit(child)
+
+    def visit_block(self, node):
+        for child in node.children:
+            if child is not None:
+                self._visit(child)
+
+    def _process_list(self, inner_text):
+        # Format in inner_text: "(items class=\"ul-squares\")" -> remove parens
+        args_str = inner_text.strip("()")
+        parts = args_str.split(' ', 1)
+        if not parts or not parts[0]:
+            return
+
+        items_var = parts[0]
+        rest = parts[1] if len(parts) > 1 else ""
+
+        items = self.context.get(items_var, [])
+        checked_list = self.context.get("checked", [])
+
+        is_checkbox = False
+        attrs = []
+        
+        for match in re.finditer(r'([a-zA-Z0-9_-]+(?:="[^"]*")?)', rest):
+            token = match.group(1)
+            if token == "checked":
+                is_checkbox = True
+            else:
+                attrs.append(token)
+
+        attr_str = (" " + " ".join(attrs)) if attrs else ""
+        indent = self._get_indent()
+
+        if is_checkbox:
+            for item in items:
+                chk = ' checked="checked"' if item in checked_list else ""
+                self.output.append(f'{indent}<input type="checkbox" id="ck-{item}"{chk}>{item}')
+        else:
+            self.output.append(f'{indent}<ul{attr_str}>')
+            self.indent_level += 1
+            inner_indent = self._get_indent()
+            for item in items:
+                self.output.append(f'{inner_indent}<li> {item} </li>')
+            self.indent_level -= 1
+            self.output.append(f'{indent}</ul>')
+
+    def visit_tag_stmt(self, node):
+        tag_name = ""
+        attributes = ""
+        inline_text = ""
+        block = None
+        attr_list = []
+
+        for child in node.children:
+            if child is None:
+                continue
+            if isinstance(child, Token):
+                if child.type == "TAG_NAME":
+                    tag_name = child.value
+                elif child.type == "TEXT":
+                    inline_text = child.value.strip()
+            elif isinstance(child, Tree):
+                if child.data == "attributes":
+                    # Collect attr dict
+                    for attr_node in child.children:
+                        if attr_node is None or not isinstance(attr_node, Tree):
+                            continue
+                        name = ""
+                        val = None
+                        for grant in attr_node.children:
+                            if grant is None:
+                                continue
+                            if grant.type == "ATTR_NAME":
+                                name = grant.value
+                            elif grant.type == "ATTR_VALUE":
+                                val = grant.value
+                        attr_list.append((name, val))
+                        if val:
+                            attributes += f'{name}={val} '
+                        else:
+                            attributes += f'{name} '
+                                
+                    attributes = attributes.strip()
+                elif child.data == "block":
+                    block = child
+
+        if tag_name == "list":
+            # the original attributes parsed
+            # it might be item=None, class="ul"
+            if attr_list:
+                items_var = attr_list[0][0]
+                is_checkbox = False
+                attrs = []
+                
+                for k, v in attr_list[1:]:
+                    if k == "checked":
+                        is_checkbox = True
+                    elif v:
+                        attrs.append(f"{k}={v}")
+                    else:
+                        attrs.append(k)
+
+                items = self.context.get(items_var, [])
+                checked_list = self.context.get("checked", [])
+                attr_str = (" " + " ".join(attrs)) if attrs else ""
+                indent = self._get_indent()
+
+                if is_checkbox:
+                    for item in items:
+                        chk = ' checked="checked"' if item in checked_list else ""
+                        self.output.append(f'{indent}<input type="checkbox" id="ck-{item}"{chk}>{item}')
+                else:
+                    self.output.append(f'{indent}<ul{attr_str}>')
+                    self.indent_level += 1
+                    inner_indent = self._get_indent()
+                    for item in items:
+                        self.output.append(f'{inner_indent}<li> {item} </li>')
+                    self.indent_level -= 1
+                    self.output.append(f'{indent}</ul>')
+            return
+
+        inline_text = self._render_text(inline_text)
+
+        indent = self._get_indent()
+        
+        # Start tag
+        open_tag = f"<{tag_name}"
+        if attributes:
+            open_tag += f" {attributes}"
+        open_tag += ">"
+        
+        if inline_text:
+            open_tag += inline_text
+
+        self.output.append(f"{indent}{open_tag}")
+        
+        # Render children inside block
+        if block:
+            self.indent_level += 1
+            self._visit(block)
+            self.indent_level -= 1
+
+        # Self-closing tags rule can be added later, assuming standard closing for now
+        close_tag = f"{indent}</{tag_name}>" if block else f"</{tag_name}>"
+
+        if not block:
+            self.output[-1] += f"</{tag_name}>"
+        else:
+            self.output.append(close_tag)
+
+    def visit_text_inline(self, node):
+        indent = self._get_indent()
+        text = node.children[0].value
+        self.output.append(f"{indent}{self._render_text(text)}")
+
+    def visit_if_stmt(self, node):
+        condition = ""
+        block_node = None
+        for child in node.children:
+            if isinstance(child, Token) and child.type == "CONDITION":
+                condition = child.value.strip()
+            elif isinstance(child, Tree) and child.data == "block":
+                block_node = child
+
+        try:
+            is_true = eval(condition, {}, self.context)
+        except Exception as e:
+            is_true = False
+
+        if is_true and block_node:
+            self._visit(block_node)
+
+    def visit_for_stmt(self, node):
+        expr = ""
+        block_node = None
+        for child in node.children:
+            if isinstance(child, Token) and child.type == "FOR_EXPR":
+                expr = child.value.strip()
+            elif isinstance(child, Tree) and child.data == "block":
+                block_node = child
+
+        match = re.match(r'([a-zA-Z0-9_]+)\s+in\s+([a-zA-Z0-9_]+)', expr)
+        if match and block_node:
+            item_var = match.group(1)
+            list_var = match.group(2)
+            
+            iterable = self.context.get(list_var, [])
+            for item in iterable:
+                self.context[item_var] = item
+                self._visit(block_node)
+                
+    def visit_include_stmt(self, node):
+        path = ""
+        for child in node.children:
+            if isinstance(child, Token) and child.type == "PATH":
+                path = child.value
+
+        # For includes, we assume a .suc extension if none is provided
+        if not path.endswith('.suc'):
+            path += '.suc'
+            
+        full_path = os.path.join(self.base_dir, path)
+        if os.path.exists(full_path):
+            with open(full_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            # Parse the include and dynamically insert its tree into the current tree
+            include_tree = parse_sucuri(content)
+            
+            # Here we should register it as a Macro, since in original Sucuri using "+macro" injects it
+            # Based on the README, 'include inc/link' makes it accessible via '+link'
+            macro_name = os.path.splitext(os.path.basename(path))[0]
+            self.macros[macro_name] = include_tree
+
+    def visit_macro_stmt(self, node):
+        macro_name = ""
+        for child in node.children:
+            if isinstance(child, Token) and child.type == "PATH":
+                macro_name = child.value
+                
+        if macro_name in self.macros:
+            self._visit(self.macros[macro_name])
+
+    def visit_list_stmt(self, node):
+        if not node.children:
+            return
+
+        items_var = None
+        is_checkbox = False
+        attrs = []
+
+        for child in node.children:
+            if child is None:
+                continue
+            if isinstance(child, Token):
+                if child.type == "PATH":
+                    if items_var is None:
+                        items_var = child.value
+                    elif child.value == "checked":
+                        is_checkbox = True
+                    else:
+                        attrs.append(child.value)
+            elif getattr(child, "data", None) == "attr":
+                attr_name = ""
+                attr_val = ""
+                for grant in child.children:
+                    if grant.type == "ATTR_NAME":
+                        attr_name = grant.value
+                    elif grant.type == "ATTR_VALUE":
+                        attr_val = grant.value
+                
+                if attr_val:
+                    attrs.append(f"{attr_name}={attr_val}")
+                else:
+                    if attr_name == "checked":
+                        is_checkbox = True
+                    else:
+                        attrs.append(attr_name)
+
+        if not items_var:
+            return
+
+        items = self.context.get(items_var, [])
+        checked_list = self.context.get("checked", [])
+
+        attr_str = (" " + " ".join(attrs)) if attrs else ""
+        indent = self._get_indent()
+
+        if is_checkbox:
+            for item in items:
+                chk = ' checked="checked"' if item in checked_list else ""
+                self.output.append(f'{indent}<input type="checkbox" id="ck-{item}"{chk}>{item}')
+        else:
+            self.output.append(f'{indent}<ul{attr_str}>')
+            self.indent_level += 1
+            inner_indent = self._get_indent()
+            for item in items:
+                self.output.append(f'{inner_indent}<li> {item} </li>')
+            self.indent_level -= 1
+            self.output.append(f'{indent}</ul>')
+            
+    def visit_style_stmt(self, node):
+        path = ""
+        for child in node.children:
+            if isinstance(child, Token) and child.type == "PATH":
+                path = child.value
+        if not path: return
+
+        if not path.endswith('.css'):
+            path += '.css'
+        full_path = os.path.join(self.base_dir, path)
+        if os.path.exists(full_path):
+            with open(full_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            self.styles.append(content)
+
+    def visit_script_stmt(self, node):
+        path = ""
+        for child in node.children:
+            if isinstance(child, Token) and child.type == "PATH":
+                path = child.value
+        if not path: return
+
+        if not path.endswith('.js'):
+            path += '.js'
+        full_path = os.path.join(self.base_dir, path)
+        if os.path.exists(full_path):
+            with open(full_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            self.scripts.append(content)
