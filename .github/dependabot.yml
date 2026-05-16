@@ -1,12 +1,12 @@
 version: 2
 updates:
-  # Mantém as Actions do GitHub atualizadas
+  # Keep GitHub Actions up to date
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
 
-  # Mantém as dependências do Python (pip / requirements.txt) atualizadas
+  # Keep Python dependencies (pip / requirements.txt) up to date
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
