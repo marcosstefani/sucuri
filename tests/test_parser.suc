@@ -1,0 +1,15 @@
+include inc/link
+style static/css/style
+
+html
+    body
+        h1 Title
+            | Description
+        list(items class="ul-squares")
+        <if x != y>
+        h2 The condition is True
+        <endif>
+        ul
+            <for a in var>
+            li Value #a
+            <endfor>

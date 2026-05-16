@@ -1,0 +1,8 @@
+include inc/link
+style static/css/style
+
+html
+    body
+        h1 Hello {name}!
+            | Welcome to Sucuri template engine.
+        +link
