@@ -64,3 +64,14 @@ def test_list_unordered():
 def test_script_tag():
     html = template(get_file("test_compiler.suc"), {"name": "Test", "items": [], "checked": []})
     assert "<script>console.log('hi');\n</script>" in html
+
+def test_list_as_variable_nested():
+    context = {"var1": [1, 2], "example": {"var2": [3, 4]}}
+    # we can use both in template as lists
+    html = template(get_file("test_list_variable.suc"), context)
+    assert "<li> 1 </li>" in html
+    assert "<li> 2 </li>" in html
+    assert "<li> 3 </li>" in html
+    assert "<li> 4 </li>" in html
+
+

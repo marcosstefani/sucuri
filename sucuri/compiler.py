@@ -46,15 +46,28 @@ class SucuriCompiler:
     def _get_indent(self):
         return "    " * self.indent_level
 
+    def _get_var(self, var_name, default=None):
+        if not var_name:
+            return default
+        parts = var_name.split('.')
+        val = self.context.get(parts[0], default)
+        for part in parts[1:]:
+            if isinstance(val, dict):
+                val = val.get(part, default)
+            else:
+                return default
+        return val
+
     def _render_text(self, text):
-        # Replace variables {var} with values from context
+        # Replace variables {var} or {var.sub} with values from context
         def repl(match):
             var_name = match.group(1)
-            return str(self.context.get(var_name, f"{{{var_name}}}"))
+            val = self._get_var(var_name, f"{{{var_name}}}")
+            return str(val)
         
-        # Also replace #loop_var
-        text = re.sub(r'\{([a-zA-Z0-9_]+)\}', repl, text)
-        text = re.sub(r'#([a-zA-Z0-9_]+)', repl, text)
+        # Also replace #loop_var and #loop_var.nested
+        text = re.sub(r'\{([a-zA-Z0-9_\.]+)\}', repl, text)
+        text = re.sub(r'#([a-zA-Z0-9_\.]+)', repl, text)
         return text.strip()
 
     def _visit(self, node):
@@ -84,8 +97,8 @@ class SucuriCompiler:
         items_var = parts[0]
         rest = parts[1] if len(parts) > 1 else ""
 
-        items = self.context.get(items_var, [])
-        checked_list = self.context.get("checked", [])
+        items = self._get_var(items_var, [])
+        checked_list = self._get_var("checked", [])
 
         is_checkbox = False
         attrs = []
@@ -169,8 +182,8 @@ class SucuriCompiler:
                     else:
                         attrs.append(k)
 
-                items = self.context.get(items_var, [])
-                checked_list = self.context.get("checked", [])
+                items = self._get_var(items_var, [])
+                checked_list = self._get_var("checked", [])
                 attr_str = (" " + " ".join(attrs)) if attrs else ""
                 indent = self._get_indent()
 
@@ -253,7 +266,7 @@ class SucuriCompiler:
             item_var = match.group(1)
             list_var = match.group(2)
             
-            iterable = self.context.get(list_var, [])
+            iterable = self._get_var(list_var, [])
             for item in iterable:
                 self.context[item_var] = item
                 self._visit(block_node)
@@ -328,8 +341,8 @@ class SucuriCompiler:
         if not items_var:
             return
 
-        items = self.context.get(items_var, [])
-        checked_list = self.context.get("checked", [])
+        items = self._get_var(items_var, [])
+        checked_list = self._get_var("checked", [])
 
         attr_str = (" " + " ".join(attrs)) if attrs else ""
         indent = self._get_indent()
