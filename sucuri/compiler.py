@@ -59,15 +59,21 @@ class SucuriCompiler:
         return val
 
     def _render_text(self, text):
+        import html
         # Replace variables {var} or {var.sub} with values from context
         def repl(match):
             var_name = match.group(1)
             val = self._get_var(var_name, f"{{{var_name}}}")
-            return str(val)
+            return html.escape(str(val))
         
         # Also replace #loop_var and #loop_var.nested
+        def repl_hash(match):
+            var_name = match.group(1)
+            val = self._get_var(var_name, f"#{var_name}")
+            return html.escape(str(val))
+
         text = re.sub(r'\{([a-zA-Z0-9_\.]+)\}', repl, text)
-        text = re.sub(r'#([a-zA-Z0-9_\.]+)', repl, text)
+        text = re.sub(r'#([a-zA-Z0-9_\.]+)', repl_hash, text)
         return text.strip()
 
     def _visit(self, node):

@@ -105,5 +105,11 @@ def test_table_tag():
     assert "<td>End A</td>" in html
     assert "<td>End B</td>" in html
 
+def test_xss_protection():
+    context = {"msg": "<script>alert(1)</script>"}
+    html = template(get_file("test_xss.suc"), context)
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+    assert "<script>" not in html
+
 
 
