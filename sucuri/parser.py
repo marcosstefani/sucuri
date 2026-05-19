@@ -27,12 +27,13 @@ define_block_stmt: "block" WS_INLINE BLOCK_NAME _NL [_INDENT block _DEDENT]
 include_stmt: "include" WS_INLINE PATH
 style_stmt: "style" WS_INLINE PATH
 script_stmt: "script" WS_INLINE PATH
-macro_stmt: "+" PATH
+macro_stmt: "+" PATH ["(" attributes ")"] [WS_INLINE TEXT]? _NL [_INDENT block _DEDENT]
 
 if_stmt: "<if" WS_INLINE CONDITION ">" _NL block "<endif>" _NL
 for_stmt: "<for" WS_INLINE FOR_EXPR ">" _NL block "<endfor>" _NL
 
-tag_stmt: TAG_NAME ["(" attributes ")"] [WS_INLINE TEXT] _NL [_INDENT block _DEDENT]
+tag_stmt: tag_def ["(" attributes ")"] [WS_INLINE TEXT] _NL [_INDENT block _DEDENT]
+tag_def: TAG_NAME | CSS_TAG
 
 attributes: attr (WS_INLINE attr)*
 attr: ATTR_NAME ["=" ATTR_VALUE]
@@ -40,6 +41,7 @@ attr: ATTR_NAME ["=" ATTR_VALUE]
 text_inline: "|" WS_INLINE? TEXT
 
 TAG_NAME: /[a-zA-Z0-9\-]+/
+CSS_TAG: /([a-zA-Z0-9\-]+)?(#[a-zA-Z0-9\-]+|\.[a-zA-Z0-9\-]+)+/
 BLOCK_NAME: /[a-zA-Z0-9_]+/
 ATTR_NAME: /[a-zA-Z0-9\-\._]+/
 ATTR_VALUE: /"[^"]*"/ | /'[^']*'/

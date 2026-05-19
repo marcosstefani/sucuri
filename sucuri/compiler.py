@@ -82,20 +82,57 @@ class SucuriCompiler:
 
     def _render_text(self, text):
         import html
-        # Replace variables {var} or {var.sub} with values from context
+        # Replace variables {var | filter} or {var.sub} with values from context
         def repl(match):
-            var_name = match.group(1)
+            raw = match.group(1)
+            parts = raw.split('|')
+            var_name = parts[0].strip()
+            
             val = self._get_var(var_name, f"{{{var_name}}}")
-            return html.escape(str(val))
+            
+            # evaluate filters
+            is_safe = False
+            for f in parts[1:]:
+                f_name = f.strip()
+                if f_name == 'safe':
+                    is_safe = True
+                elif f_name == 'upper':
+                    val = str(val).upper()
+                elif f_name == 'lower':
+                    val = str(val).lower()
+                elif f_name == 'title':
+                    val = str(val).title()
+            
+            if not is_safe:
+                return html.escape(str(val))
+            return str(val)
         
         # Also replace #loop_var and #loop_var.nested
         def repl_hash(match):
-            var_name = match.group(1)
+            raw = match.group(1)
+            parts = raw.split('|')
+            var_name = parts[0].strip()
+            
             val = self._get_var(var_name, f"#{var_name}")
-            return html.escape(str(val))
+            
+            is_safe = False
+            for f in parts[1:]:
+                f_name = f.strip()
+                if f_name == 'safe':
+                    is_safe = True
+                elif f_name == 'upper':
+                    val = str(val).upper()
+                elif f_name == 'lower':
+                    val = str(val).lower()
+                elif f_name == 'title':
+                    val = str(val).title()
 
-        text = re.sub(r'\{([a-zA-Z0-9_\.]+)\}', repl, text)
-        text = re.sub(r'#([a-zA-Z0-9_\.]+)', repl_hash, text)
+            if not is_safe:
+                return html.escape(str(val))
+            return str(val)
+
+        text = re.sub(r'\{([a-zA-Z0-9_\.\s\|]+)\}', repl, text)
+        text = re.sub(r'#([a-zA-Z0-9_\.\s\|]+)', repl_hash, text)
         return text.strip()
 
     def _visit(self, node):
@@ -160,15 +197,36 @@ class SucuriCompiler:
         inline_text = ""
         block = None
         attr_list = []
+        css_classes = []
+        css_id = ""
 
         for child in node.children:
             if child is None:
                 continue
             if isinstance(child, Token):
-                if child.type == "TAG_NAME":
-                    tag_name = child.value
-                elif child.type == "TEXT":
+                if child.type == "TEXT":
                     inline_text = child.value.strip()
+            elif getattr(child, "data", None) == "tag_def":
+                tag_token = child.children[0]
+                if tag_token.type == "TAG_NAME":
+                    tag_name = tag_token.value
+                elif tag_token.type == "CSS_TAG":
+                    raw_val = tag_token.value
+                    if raw_val[0] in ['#', '.']:
+                        tag_name = "div"
+                    else:
+                        match = re.match(r'^([a-zA-Z0-9\-]+)', raw_val)
+                        if match:
+                            tag_name = match.group(1)
+                            raw_val = raw_val[len(tag_name):]
+                    
+                    for match in re.finditer(r'(#[a-zA-Z0-9\-]+|\.[a-zA-Z0-9\-]+)', raw_val):
+                        token = match.group(1)
+                        if token.startswith('#'):
+                            css_id = token[1:]
+                        elif token.startswith('.'):
+                            css_classes.append(token[1:])
+
             elif isinstance(child, Tree):
                 if child.data == "attributes":
                     # Collect attr dict
@@ -315,10 +373,26 @@ class SucuriCompiler:
 
         indent = self._get_indent()
         
+        # Merge CSS shortcut classes/id into attributes string
+        class_str = ""
+        id_str = ""
+        
+        if css_classes:
+            class_str = f'class="{" ".join(css_classes)}"'
+        if css_id:
+            id_str = f'id="{css_id}"'
+            
+        ext_attrs = []
+        if id_str: ext_attrs.append(id_str)
+        if class_str: ext_attrs.append(class_str)
+        if attributes: ext_attrs.append(attributes)
+
+        final_attrs = " ".join(ext_attrs)
+
         # Start tag
         open_tag = f"<{tag_name}"
-        if attributes:
-            open_tag += f" {attributes}"
+        if final_attrs:
+            open_tag += f" {final_attrs}"
         open_tag += ">"
         
         if inline_text:
@@ -405,12 +479,44 @@ class SucuriCompiler:
 
     def visit_macro_stmt(self, node):
         macro_name = ""
+        attr_dict = {}
         for child in node.children:
-            if isinstance(child, Token) and child.type == "PATH":
-                macro_name = child.value
+            if child is None:
+                continue
+            if isinstance(child, Token):
+                if child.type == "PATH":
+                    macro_name = child.value
+            elif isinstance(child, Tree) and getattr(child, "data", None) == "attributes":
+                for attr_node in child.children:
+                    if attr_node is None or not isinstance(attr_node, Tree):
+                        continue
+                    name = ""
+                    val = None
+                    for grant in attr_node.children:
+                        if grant is None:
+                            continue
+                        if grant.type == "ATTR_NAME":
+                            name = grant.value
+                        elif grant.type == "ATTR_VALUE":
+                            val = grant.value.strip("\"'")
+                    if name:
+                        attr_dict[name] = val
                 
         if macro_name in self.macros:
+            # Inject parameters into context
+            old_context = {}
+            for k, v in attr_dict.items():
+                old_context[k] = self.context.get(k)
+                self.context[k] = v
+
             self._visit(self.macros[macro_name])
+
+            # Restore parameters
+            for k, v in old_context.items():
+                if v is None:
+                    del self.context[k]
+                else:
+                    self.context[k] = v
 
     def visit_list_stmt(self, node):
         if not node.children:

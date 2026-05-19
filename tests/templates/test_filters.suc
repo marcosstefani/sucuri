@@ -1,0 +1,3 @@
+h1 {titulo | title}
+p {content | safe}
+span {status | upper}
