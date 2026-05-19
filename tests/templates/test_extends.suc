@@ -1,0 +1,8 @@
+extends layout
+
+block content
+    h1 Bem-vindo à Home
+    p Aqui vem o conteudo.
+
+block footer
+    p Rodape do Index

@@ -1,0 +1,8 @@
+html
+    head
+        title {title}
+    body
+        div(id="content")
+            block content
+        div(id="footer")
+            block footer

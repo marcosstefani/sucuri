@@ -1,0 +1,3 @@
+div.card
+    h2 {title}
+    p {type}

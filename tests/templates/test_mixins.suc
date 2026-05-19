@@ -1,0 +1,3 @@
+include inc/card
++card(title="Aviso" type="danger")
++card(title="Success" type="info")
