@@ -12,12 +12,17 @@ block: statement*
 block_stmt: if_stmt
           | for_stmt
           | tag_stmt
+          | define_block_stmt
 
 stmt: include_stmt
     | style_stmt
     | script_stmt
     | text_inline
     | macro_stmt
+    | extends_stmt
+
+extends_stmt: "extends" WS_INLINE PATH
+define_block_stmt: "block" WS_INLINE BLOCK_NAME _NL [_INDENT block _DEDENT]
 
 include_stmt: "include" WS_INLINE PATH
 style_stmt: "style" WS_INLINE PATH
@@ -35,6 +40,7 @@ attr: ATTR_NAME ["=" ATTR_VALUE]
 text_inline: "|" WS_INLINE? TEXT
 
 TAG_NAME: /[a-zA-Z0-9\-]+/
+BLOCK_NAME: /[a-zA-Z0-9_]+/
 ATTR_NAME: /[a-zA-Z0-9\-\._]+/
 ATTR_VALUE: /"[^"]*"/ | /'[^']*'/
 PATH: /[a-zA-Z0-9\/\.\-_]+/

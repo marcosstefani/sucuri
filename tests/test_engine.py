@@ -111,5 +111,14 @@ def test_xss_protection():
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
     assert "<script>" not in html
 
+def test_template_inheritance():
+    context = {"title": "My Page"}
+    html = template(get_file("test_extends.suc"), context)
+    assert "<title>My Page</title>" in html
+    assert "Bem-vindo à Home" in html
+    assert "Rodape do Index" in html
+    assert "div id=\"content\"" in html
+    assert "div id=\"footer\"" in html
+
 
 

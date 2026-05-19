@@ -18,12 +18,34 @@ class SucuriCompiler:
         self.styles = []
         self.scripts = []
         self.macros = {}
+        self.blocks = {}
+        self.extends_path = None
         self.indent_level = 0
         
         # HTML usually has a head/styles section injected before the body
         # Let's make an initial pass to load macros, if necessary.
         self._visit(tree)
-        
+
+        if self.extends_path:
+            # Re-compile but from parent template
+            parent_path = os.path.join(self.base_dir, self.extends_path)
+            if not parent_path.endswith('.suc'):
+                parent_path += '.suc'
+            with open(parent_path, 'r', encoding='utf-8') as f:
+                parent_text = f.read()
+            from sucuri.parser import parse_sucuri
+            parent_tree = parse_sucuri(parent_text)
+            
+            # Save child blocks to inject into parent
+            child_blocks = self.blocks
+            self.blocks = {}
+            self.extends_path = None
+            self.output = []
+            
+            # Assign collected blocks to the parent
+            self.blocks = child_blocks
+            self._visit(parent_tree)
+
         html = "\n".join(self.output)
         
         # Glue everything together in HTML style
@@ -477,3 +499,35 @@ class SucuriCompiler:
             with open(full_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             self.scripts.append(content)
+
+    def visit_extends_stmt(self, node):
+        for child in node.children:
+            if isinstance(child, Token) and child.type == "PATH":
+                self.extends_path = child.value
+
+    def visit_define_block_stmt(self, node):
+        block_name = ""
+        block_node = None
+        for child in node.children:
+            if isinstance(child, Token) and child.type == "BLOCK_NAME":
+                block_name = child.value
+            elif isinstance(child, Tree) and child.data == "block":
+                block_node = child
+
+        if not block_name:
+            return
+
+        # If a child overriding block is available in self.blocks, we render the child block instead
+        if block_name in self.blocks:
+            self._visit(self.blocks[block_name])
+        else:
+            # We are currently parsing a block definition. Save it to self.blocks
+            # Or if it's the base template and no override exists, render the default block_node
+            if self.extends_path:
+                # Inside child template: store it to inject into parent
+                self.blocks[block_name] = block_node
+            else:
+                # Inside parent template or no-extends template: render the default body
+                if block_node:
+                    self._visit(block_node)
+
