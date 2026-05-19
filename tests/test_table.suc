@@ -1,0 +1,2 @@
+html
+    table(heads rows class="table" id="tb-one" footers)

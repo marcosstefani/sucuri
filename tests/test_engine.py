@@ -74,4 +74,25 @@ def test_list_as_variable_nested():
     assert "<li> 3 </li>" in html
     assert "<li> 4 </li>" in html
 
+def test_table_tag():
+    context = {
+        "heads": ["A", "B"],
+        "rows": [[1, 2], [3, 4]],
+        "footers": ["End A", "End B"]
+    }
+    html = template(get_file("test_table.suc"), context)
+    assert '<table class="table" id="tb-one">' in html
+    assert "<thead>" in html
+    assert "<th>A</th>" in html
+    assert "<th>B</th>" in html
+    assert "<tbody>" in html
+    assert "<td>1</td>" in html
+    assert "<td>2</td>" in html
+    assert "<td>3</td>" in html
+    assert "<td>4</td>" in html
+    assert "<tfoot>" in html
+    assert "<td>End A</td>" in html
+    assert "<td>End B</td>" in html
+
+
 

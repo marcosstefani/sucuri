@@ -201,6 +201,84 @@ class SucuriCompiler:
                     self.output.append(f'{indent}</ul>')
             return
 
+        elif tag_name == "table":
+            if attr_list:
+                headers_var = None
+                data_var = None
+                foot_var = None
+                attrs = []
+                
+                positional = []
+                for k, v in attr_list:
+                    if v:
+                        attrs.append(f"{k}={v}")
+                    else:
+                        positional.append(k)
+                        
+                if len(positional) >= 1:
+                    headers_var = positional[0]
+                if len(positional) >= 2:
+                    data_var = positional[1]
+                if len(positional) >= 3:
+                    foot_var = positional[2]
+
+                headers = self._get_var(headers_var, []) if headers_var else []
+                data = self._get_var(data_var, []) if data_var else []
+                foot = self._get_var(foot_var, []) if foot_var else []
+                
+                attr_str = (" " + " ".join(attrs)) if attrs else ""
+                indent = self._get_indent()
+                self.output.append(f'{indent}<table{attr_str}>')
+                self.indent_level += 1
+                inner_indent = self._get_indent()
+                
+                if headers:
+                    self.output.append(f'{inner_indent}<thead>')
+                    self.indent_level += 1
+                    thead_indent = self._get_indent()
+                    self.output.append(f'{thead_indent}<tr>')
+                    self.indent_level += 1
+                    th_indent = self._get_indent()
+                    for th in headers:
+                        self.output.append(f'{th_indent}<th>{th}</th>')
+                    self.indent_level -= 1
+                    self.output.append(f'{thead_indent}</tr>')
+                    self.indent_level -= 1
+                    self.output.append(f'{inner_indent}</thead>')
+                    
+                if data:
+                    self.output.append(f'{inner_indent}<tbody>')
+                    self.indent_level += 1
+                    tbody_indent = self._get_indent()
+                    for row in data:
+                        self.output.append(f'{tbody_indent}<tr>')
+                        self.indent_level += 1
+                        td_indent = self._get_indent()
+                        for cell in row:
+                            self.output.append(f'{td_indent}<td>{cell}</td>')
+                        self.indent_level -= 1
+                        self.output.append(f'{tbody_indent}</tr>')
+                    self.indent_level -= 1
+                    self.output.append(f'{inner_indent}</tbody>')
+
+                if foot:
+                    self.output.append(f'{inner_indent}<tfoot>')
+                    self.indent_level += 1
+                    tfoot_indent = self._get_indent()
+                    self.output.append(f'{tfoot_indent}<tr>')
+                    self.indent_level += 1
+                    tf_indent = self._get_indent()
+                    for tf in foot:
+                        self.output.append(f'{tf_indent}<td>{tf}</td>')
+                    self.indent_level -= 1
+                    self.output.append(f'{tfoot_indent}</tr>')
+                    self.indent_level -= 1
+                    self.output.append(f'{inner_indent}</tfoot>')
+
+                self.indent_level -= 1
+                self.output.append(f'{indent}</table>')
+            return
+
         inline_text = self._render_text(inline_text)
 
         indent = self._get_indent()
