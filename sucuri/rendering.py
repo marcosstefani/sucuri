@@ -7,37 +7,51 @@ import os
 # However, the abstract syntax tree (AST) can be cached independently of the context!
 _AST_CACHE = {}
 
+class Environment:
+    """
+    Represents a templating environment that can hold custom plugins, filters,
+    and configurations.
+    """
+    def __init__(self, base_dir="."):
+        self.base_dir = base_dir
+        self.filters = {}
+
+    def register_filter(self, name, filter_func=None):
+        if filter_func is None:
+            def decorator(f):
+                self.filters[name] = f
+                return f
+            return decorator
+        self.filters[name] = filter_func
+        return filter_func
+
+    def template(self, filepath, context=None):
+        if context is None:
+            context = {}
+
+        if filepath not in _AST_CACHE:
+            if not os.path.exists(filepath):
+                raise FileNotFoundError(f"Template file '{filepath}' not found.")
+            
+            with open(filepath, 'r', encoding='utf-8') as f:
+                sucuri_text = f.read()
+            
+            try:
+                ast = parse_sucuri(sucuri_text)
+                _AST_CACHE[filepath] = ast
+            except Exception as err:
+                raise err
+            
+        tree = _AST_CACHE[filepath]
+        
+        base_dir = os.path.dirname(filepath) if filepath else self.base_dir
+        compiler = SucuriCompiler(context, base_dir=base_dir, filters=self.filters)
+        return compiler.compile(tree)
+
+default_env = Environment()
+
 def template(filepath, context=None):
     """
-    Main function of the Sucuri engine, as described in the original README.
-    Reads the file, parses it into an AST (cached in memory for performance),
-    and then evaluates the AST using the data injected via `context` to return 
-    a string with the final compiled HTML at runtime.
+    Main function of the Sucuri engine, compatible with backward definitions.
     """
-    if context is None:
-        context = {}
-
-    # Caching is done in the static parser phase to speed things up significantly
-    if filepath not in _AST_CACHE:
-        if not os.path.exists(filepath):
-            raise FileNotFoundError(f"Template file '{filepath}' not found.")
-        
-        with open(filepath, 'r', encoding='utf-8') as f:
-            sucuri_text = f.read()
-        
-        # Generate the AST for the entire text
-        # If the file had a syntax error, parse_sucuri will throw SucuriSyntaxError
-        try:
-            ast = parse_sucuri(sucuri_text)
-            _AST_CACHE[filepath] = ast
-        except Exception as err:
-            # We bypass the cache so the developer can fix it and reload
-            raise err
-        
-    tree = _AST_CACHE[filepath]
-    
-    base_dir = os.path.dirname(filepath) if filepath else "."
-    compiler = SucuriCompiler(context, base_dir=base_dir)
-    html_output = compiler.compile(tree)
-    
-    return html_output
+    return default_env.template(filepath, context)

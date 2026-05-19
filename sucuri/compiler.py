@@ -4,9 +4,10 @@ import os
 from sucuri.parser import parse_sucuri
 
 class SucuriCompiler:
-    def __init__(self, context=None, base_dir="."):
+    def __init__(self, context=None, base_dir=".", filters=None):
         self.context = context or {}
         self.base_dir = base_dir
+        self.filters = filters or {}
         self.indent_level = 0
         self.output = []
         self.styles = []
@@ -102,6 +103,8 @@ class SucuriCompiler:
                     val = str(val).lower()
                 elif f_name == 'title':
                     val = str(val).title()
+                elif f_name in self.filters:
+                    val = self.filters[f_name](val)
             
             if not is_safe:
                 return html.escape(str(val))
@@ -126,6 +129,8 @@ class SucuriCompiler:
                     val = str(val).lower()
                 elif f_name == 'title':
                     val = str(val).title()
+                elif f_name in self.filters:
+                    val = self.filters[f_name](val)
 
             if not is_safe:
                 return html.escape(str(val))
