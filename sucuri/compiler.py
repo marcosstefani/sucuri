@@ -172,18 +172,22 @@ class SucuriCompiler:
             if attr_list:
                 items_var = attr_list[0][0]
                 is_checkbox = False
+                checked_var = "checked"
                 attrs = []
                 
                 for k, v in attr_list[1:]:
-                    if k == "checked":
-                        is_checkbox = True
-                    elif v:
+                    if v:
                         attrs.append(f"{k}={v}")
                     else:
-                        attrs.append(k)
+                        # treat the first positional argument without value as the checked variable
+                        if not is_checkbox:
+                            checked_var = k
+                            is_checkbox = True
+                        else:
+                            attrs.append(k)
 
                 items = self._get_var(items_var, [])
-                checked_list = self._get_var("checked", [])
+                checked_list = self._get_var(checked_var, [])
                 attr_str = (" " + " ".join(attrs)) if attrs else ""
                 indent = self._get_indent()
 

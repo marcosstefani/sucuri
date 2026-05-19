@@ -35,7 +35,7 @@ attr: ATTR_NAME ["=" ATTR_VALUE]
 text_inline: "|" WS_INLINE? TEXT
 
 TAG_NAME: /[a-zA-Z0-9\-]+/
-ATTR_NAME: /[a-zA-Z0-9\-\.]+/
+ATTR_NAME: /[a-zA-Z0-9\-\._]+/
 ATTR_VALUE: /"[^"]*"/ | /'[^']*'/
 PATH: /[a-zA-Z0-9\/\.\-_]+/
 CONDITION: /[^>]+/

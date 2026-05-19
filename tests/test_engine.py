@@ -55,6 +55,14 @@ def test_list_checkboxes():
     assert 'type="checkbox" id="ck-2"' in html
     assert 'type="checkbox" id="ck-2" checked="checked"' not in html
 
+def test_list_checkboxes_custom_variable():
+    context = {"my_items": ['one', 'two', 'five'], "my_checked": ['two']}
+    tree = parse_sucuri('list(my_items my_checked class="hello-class")')
+    html = SucuriCompiler(context, base_dir=BASE_DIR).compile(tree)
+    assert '<input type="checkbox" id="ck-one">one' in html
+    assert '<input type="checkbox" id="ck-two" checked="checked">two' in html
+    assert '<input type="checkbox" id="ck-five">five' in html
+
 def test_list_unordered():
     html = template(get_file("test_compiler.suc"), {"name": "Test", "items": [1, 2], "checked": []})
     assert '<ul class="ul-squares">' in html
