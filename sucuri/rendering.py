@@ -26,8 +26,13 @@ def template(filepath, context=None):
             sucuri_text = f.read()
         
         # Generate the AST for the entire text
-        ast = parse_sucuri(sucuri_text)
-        _AST_CACHE[filepath] = ast
+        # If the file had a syntax error, parse_sucuri will throw SucuriSyntaxError
+        try:
+            ast = parse_sucuri(sucuri_text)
+            _AST_CACHE[filepath] = ast
+        except Exception as err:
+            # We bypass the cache so the developer can fix it and reload
+            raise err
         
     tree = _AST_CACHE[filepath]
     

@@ -67,5 +67,22 @@ class SucuriIndenter(Indenter):
 
 parser = Lark(grammar, parser='lalr', lexer='contextual', postlex=SucuriIndenter())
 
+class SucuriSyntaxError(Exception):
+    def __init__(self, message, line, column):
+        super().__init__(message)
+        self.line = line
+        self.column = column
+
 def parse_sucuri(text):
-    return parser.parse(text + "\n")
+    from lark.exceptions import UnexpectedInput, UnexpectedToken, UnexpectedCharacters
+    try:
+        return parser.parse(text + "\n")
+    except UnexpectedToken as e:
+        msg = f"Syntax error at line {e.line}, column {e.column}.\nUnexpected token: {e.token}\nExpected: {', '.join(e.expected)}"
+        raise SucuriSyntaxError(msg, e.line, e.column) from e
+    except UnexpectedCharacters as e:
+        msg = f"Syntax error at line {e.line}, column {e.column}.\nUnexpected characters.\nAllowed: {', '.join(e.allowed)}"
+        raise SucuriSyntaxError(msg, e.line, e.column) from e
+    except UnexpectedInput as e:
+        msg = f"Syntax error at line {e.line}, column {e.column}."
+        raise SucuriSyntaxError(msg, e.line, e.column) from e
