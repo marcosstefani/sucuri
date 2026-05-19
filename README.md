@@ -1,50 +1,86 @@
-+<a href="#"><img src="https://user-images.githubusercontent.com/16294901/37826760-892cd0de-2e73-11e8-8ea1-2afc390c2ac0.png" height="300" align="right"></a>
-# This is a very important project.
+<a href="#"><img src="https://user-images.githubusercontent.com/16294901/37826760-892cd0de-2e73-11e8-8ea1-2afc390c2ac0.png" height="300" align="right"></a>
+
 # Sucuri
-Simple and efficient template engine for Python projects inspired by [PugJS](https://pugjs.org)
 
-## Instaling
+Simple and efficient template engine for Python projects, inspired by [PugJS](https://pugjs.org).
+
+Sucuri is designed to bring an elegant, indentation-based syntax to Python. By stripping away repetitive HTML tags and taking advantage of natural code structure, Sucuri gives developers a pristine, highly readable HTML rendering experience. 
+
+Powered natively by the [Lark](https://github.com/lark-parser/lark) parser, Sucuri supports deep variable nesting, loops, conditionals, seamless macro injections, and is **completely framework-independent**. It plays just as well with modern frameworks like **FastAPI**, **Django**, and **Flask** as it does in native Python scripts.
+
+---
+
+## 📦 Installation
+
 Install and update using [pip](https://pip.pypa.io/en/stable/quickstart/):
-> pip install sucuri
 
-## Creating a Sucuri Template
-- Example of code:
-```
-html
-    body
-        h1 Title
-        a(href='#') This is my link
-```
-As can be seen in the code example above, the sucuri development requires tabulation standardization. We do not determine the number of spaces, but it is necessary to keep the same number of spaces on the left in the whole code, because this quantity will inform if a certain TAG of the HTML will be contained within another one or not. With this, in the example above we will have the following HTML code:
-```
-<html>
-    <body>
-        <h1>Title</h1>
-        <a href="#">This is my link</a>
-    </body>
-</html>
+```bash
+pip install sucuri
 ```
 
-## Using
-To use sucuri, you need to import the sucuri package into your Python file, the example below is an application that uses the sucuri to render in the [Flask](http://flask.pocoo.org/):
+---
+
+## 🚀 Quick Start & Integration
+
+Sucuri returns raw HTML strings that can be seamlessly injected into any existing web framework format. All you need is the `template` function from `sucuri.rendering`.
+
+### Vanilla Python
+```python
+from sucuri.rendering import template
+
+context = {"name": "World"}
+html_output = template("my_template.suc", context)
+print(html_output)
 ```
-from sucuri import rendering
+
+### ⚡ FastAPI Integration
+Returns a raw `HTMLResponse` instantly!
+```python
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
+from sucuri.rendering import template
+
+app = FastAPI()
+
+@app.get("/")
+def index():
+    context = {"name": "FastAPI User"}
+    html = template('templates/index.suc', context)
+    return HTMLResponse(content=html, status_code=200)
+```
+
+### 🌶️ Flask Integration
+Use Flask's `render_template_string` to wrap Sucuri's output.
+```python
 from flask import Flask, render_template_string
+from sucuri.rendering import template
 
 app = Flask(__name__)
 
 @app.route("/")
 def index():
-    template = rendering.template('template.suc')
-    return render_template_string(template)
+    context = {"name": "Flask User"}
+    html = template('templates/index.suc', context)
+    return render_template_string(html)
 ```
 
+### 🎸 Django Integration
+Return the compiled string through `HttpResponse`.
+```python
+from django.http import HttpResponse
+from sucuri.rendering import template
 
-## Command Line Interface (CLI)
+def index(request):
+    context = {"name": "Django User"}
+    html = template('templates/index.suc', context)
+    return HttpResponse(html)
+```
 
-Sucuri provides a Command Line Interface (CLI) that allows you to easily process templates directly from your terminal. When you install `sucuri`, the `sucuri` command is automatically registered system-wide.
+---
 
-To compile a `.suc` file locally and optionally pass dynamic JSON data for rendering variables:
+## 💻 Command Line Interface (CLI)
+
+Sucuri provides a CLI to directly process `.suc` templates from your terminal—perfect for shell scripts and static site generation!
 
 ```bash
 # Basic compilation (outputs to stdout)
@@ -53,35 +89,49 @@ sucuri build index.suc
 # Compilation with output file
 sucuri build index.suc -o index.html
 
-# Compilation passing JSON context variables inline
-sucuri build index.suc --context '{"title": "My Page", "items": ["Item 1", "Item 2"]}' -o index.html
+# Compilation passing JSON context variables directly inline
+sucuri build index.suc --context '{"title": "My Page"}' -o index.html
 
 # Compilation using JSON data loaded from another file
 sucuri build index.suc --context context.json -o index.html
 ```
 
+---
 
-As can be seen in the example above, the template in the example is loaded from a file named `template.suc` which is in the project's root directory, however it could be in any project directory, such as `templates/template.suc` if you include a folder to group the templates. At the first access to the archive, it will take care of storing it in memory, thus making access to information less costly and more efficient. 
+## 📖 Syntax & Features
+
+### Basics & Indentation 
+A standard `HTML` file doesn't need brackets `< >`. Instead, Sucuri relies on **tabs or spaces** (kept strictly uniform) to determine tag hierarchies.
+
+```pug
+html
+    body
+        h1 Title
+        a(href='#') This is my link
+```
+**Output:**
+```html
+<html>
+    <body>
+        <h1>Title</h1>
+        <a href="#">This is my link</a>
+    </body>
+</html>
+```
 
 ### Text
-In sucuri, texts are described in two ways. It can be written after the declaration of the tag such as:
-```
-h1 Title
-```
-Result:
-```
-<h1>Title</h1>
-```
-Or you can type in more than one line using the `|` on the lines that are not the same as the tag, see example:
-```
+
+Texts can be described in two ways. Inline together with the tag declaration, or spanning multiple lines starting with the `|` pipe character.
+
+```pug
 h3 Hello!
     | Text
     | with
     | more than
     | one line
 ```
-Result:
-```
+**Output:**
+```html
 <h3>Hello!
     Text
     with
@@ -91,442 +141,165 @@ Result:
 ```
 
 ### Attributes
-Just as in HTML the attributes in the sucuri must be separated by space and unlike the PugJS must be in a row only and can not be separated by commas. They must necessarily be enclosed in parentheses. See examples of the use of attributes below:
-```
+HTML attributes in Sucuri must be separated by space and enclosed strictly within parentheses `()`. Unlike standard Pug, they are on a single line and separated by spaces (not commas).
+
+```pug
 a(href='google.com') Google
 a(class='button' href='google.com') Google
 div(class='div-class')
+input(type="checkbox" checked)
 ```
-- Result:
-```
+**Output:**
+```html
 <a href="google.com">Google</a>
 <a class="button" href="google.com">Google</a>
 <div class="div-class"></div>
+<input type="checkbox" checked>
 ```
 
-### Rendering of data
-We already know (seen in the text above) that we can only use the `template('template_name')` function with a simple `.suc` file, however it is possible to pass information through a JSON to the template and the sucuri will automatically render the data in the proper location, see the example below:
-- Sucuri file:
-```
-html
-    body
-        h1 Hello {a}
-            | Title
-            | More
-        a(href='#') This is my link
-        h3 {b}
-```
-- Python example with data:
-```
-from flask import Flask, render_template_string
-from sucuri import rendering
+### Dynamic Variables (Context)
+Variables passed by Python's `context` can be effortlessly embedded directly into your text with `{}`. Sucuri also resolves **deeply nested context**. 
 
-app = Flask(__name__)
+**Python Context:** `{"user": {"name": "Alice", "id": 123}}`
 
-@app.route("/")
-def index():
-    template = rendering.template('template_data.suc',{"a": 1, "b": "Hello!"})
-    return render_template_string(template)
-```
-- Result:
-```
-<html>
-    <body>
-        <h1>Hello 1
-        Title
-        More
-        </h1>
-        <a href="#">This is my link</a>
-        <h3>Hello!</h3>
-    </body>
-</html>
+**Sucuri:**
+```pug
+div(class="profile")
+    h1 Hello {user.name}!
+    span User ID is {user.id}
 ```
 
-### Injecting template
-Code reuse can be done through injected templates. This facility makes reuse of the code very efficient and enables the creation of code components. In the sucuri the identification of an injection occurs through an `include` at the beginning of the .suc file and its use is carried out using the `+` symbol before the name of the file that was imported. See the example below using this feature:
-- Sucuri file (`template_include.suc`):
-```
-include inc/link
-include inc/list
+### Control Flow
+You can handle logic natively in `.suc` files.
 
-html
-    body
-        h1 Hello
-            | Title
-            | More
-        +link
-        h3 Oh Yeahh
-        +list
-```
-- File inside the folder `inc` called `link.suc` (`inc/link.suc`):
-```
-a(href='#') {text}
-```
-- File inside the folder `inc` called `list.suc` (`inc/list.suc`):
-```
-ul
-    li A
-    li B
-```
-- Python example:
-```
-from flask import Flask, render_template_string
-from sucuri import rendering
-
-app = Flask(__name__)
-
-@app.route("/")
-def index():
-    template = rendering.template('template_include.suc',{"text": "Hello! I'm here!"})
-    return render_template_string(template)
-```
-- Result:
-```
-<html>
-    <body>
-        <h1>Hello
-        Title
-        More
-        </h1>
-        <a href="#">Hello! I'm here!</a>
-        <h3>Oh Yeahh</h3>
-        <ul>
-            <li>A</li>
-            <li>B</li>
-        </ul>
-    </body>
-</html>
-```
-
-### Condition (if)
-
-It is possible to use conditional statements within Sucuri. Conditions are using the same form as Python's. Hence, the main operators are ```==``` and ```!=```. See an example below:
-- Main file
-```
-from flask import Flask, render_template_string
-from sucuri import rendering
-
-app = Flask(__name__)
-
-@app.route("/")
-def index():
-    template = rendering.template('template_if.suc',{"x": 1, "y": 3})
-    return render_template_string(template)
-```
-- Sucuri file (`template_if.suc`):
-```
-include inc/if
-
-html
-    body
-        h1 Hello
-            | Title
-            | More
-        +if
-```
-
-- File inside the folder `inc` called `if.suc` (`inc/if.suc`):
-```
-<if x != y>
-h2 The condition is True
+#### If Conditions
+Wrap standard comparisons using `<if condition>` and `<endif>`.
+```pug
+<if user.status != "banned">
+  h1 User is active!
 <endif>
 ```
-- Result:
-```
-<html>
-    <body>
-        <h1>Hello
-            Title
-            More
-        </h1>
-        <h2> The condtition is True </h2>
-    </body>
-</html>
-```
 
-### Loop (for)
-Sucuri has a loop in collections of objects, so it is necessary to use the object that has this characteristic as a parameter and to use the information in that collection. See the example below:
-- Main file
-```
-from flask import Flask, render_template_string
-from sucuri import rendering
+#### For Loops
+Iterate elegantly using `<for item in list>`. Access your iterated items dynamically using the hash `#` symbol (which also supports nested resolution like `#item.id`!).
 
-app = Flask(__name__)
-
-@app.route("/")
-def index():
-    template = rendering.template('template.suc',{"text": "Hello! I'm here!", "var":[1, 2, 3, 4]})
-    return render_template_string(template)
-```
-- Sucuri file (`template_include.suc`):
-```
-include inc/link
-include inc/list
-
-html
-    body
-        h1 Hello
-            | Title
-            | More
-        +link
-        h1 Test
-        +list
-```
-- File inside the folder `inc` called `link.suc` (`inc/link.suc`):
-```
-a(href='#') {text}
-```
-- File inside the folder `inc` called `list.suc` (`inc/list.suc`):
-```
+**Python Context:** `{"invoices": [{"id": 1}, {"id": 2}]}`
+```pug
 ul
-    <for a in var>
-    li Value #a
-    h1 test
-    ul
-        <for w in var>
-        li Another #w
-        <endfor>
-    <endfor>
-```
-- Result:
-```
-<html>
-    <body>
-        <h1>Hello
-            Title
-            More
-        </h1>
-        <a href="#">Hello! I'm here!</a>
-        <h1>Test</h1>
-        <ul>
-            <li>Value 1</li>
-            <h1>test</h1>
-            <ul>
-                <li>Another 1</li>
-                <li>Another 2</li>
-                <li>Another 3</li>
-                <li>Another 4</li>
-            </ul>
-            <li>Value 2</li>
-            <h1>test</h1>
-            <ul>
-                <li>Another 1</li>
-                <li>Another 2</li>
-                <li>Another 3</li>
-                <li>Another 4</li>
-            </ul>
-            <li>Value 3</li>
-            <h1>test</h1>
-            <ul>
-                <li>Another 1</li>
-                <li>Another 2</li>
-                <li>Another 3</li>
-                <li>Another 4</li>
-            </ul>
-            <li>Value 4</li>
-            <h1>test</h1>
-            <ul>
-                <li>Another 1</li>
-                <li>Another 2</li>
-                <li>Another 3</li>
-                <li>Another 4</li>
-            </ul>
-        </ul>
-    </body>
-</html>
-```
-
-### Lists
-
-It is possible to generate unordered bullet list (```<ul>```) and checkboxex with Sucuri. This requires that the Python list given as argument is only a one dimension list for unordered lists and two (the list of the items and the list of the checked items) for the checkboxes. See an example below:
-- Main file
-```
-from flask import Flask, render_template_string
-from sucuri import rendering
-
-app = Flask(__name__)
-
-@app.route("/")
-def index():
-    template = rendering.template('template_list.suc',{"items": [1, "two", 3, "Five"], "checked": [1, "Five"]})
-    return render_template_string(template)
-```
-- Sucuri file (`template_list.suc`):
-```
-
-html
-    body
-        h1 Hello
-        list(items)
-        list(items checked)
-```
-
-- Result:
-```
-<html>
-    <body>
-        <h1>Hello</h1>
-        <ul>
-            <li> 1 </li>
-            <li> two </li>
-            <li> 3 </li>
-            <li> Five </li>
-        </ul>
-        <input type="checkbox" id="ck-1" checked="checked">1
-        <input type="checkbox" id="ck-two">two
-        <input type="checkbox" id="ck-3">3
-        <input type="checkbox" id="ck-Five" checked="checked">Five
-    </body>
-</html>
-```
-
-`list()` also takes the optional argument `class`, which can be used to set the class of unordered lists like so:
-
-- Main file
-```
-from flask import Flask, render_template_string
-from sucuri import rendering
-
-app = Flask(__name__)
-
-@app.route("/")
-def index():
-    template = rendering.template('template_list_with_classes.suc',{"items": [1, "two", 3, "Five"]})
-    return render_template_string(template)
-```
-- Sucuri file (`template_list_with_classes.suc`):
-```
-style static/css/list
-
-html
-    body
-        h1 Hello
-        list(items class="ul-squares")
-```
-
-- Result:
-```
-<html>
-    <body>
-        <h1>Hello</h1>
-        <ul class="ul-squares">
-            <li> 1 </li>
-            <li> two </li>
-            <li> 3 </li>
-            <li> Five </li>
-        </ul>
-    </body>
-</html>
-```
-### Injecting Style (css) or Script (js)
-To inject style or script into your html, the sucuri uses the style command that should come before the commands that will translate the html, in this case along with the import of the file however with the `style` tag for `css` and the `script` tag for `js` files.
-- Sucuri file (`template.suc`):
-```
-include inc/link
-include inc/list
-style static/css/style
-script static/js/script
-
-html
-    body
-        h1 Hello
-            | Title
-            | More
-        +link
-        h1 Test
-        +list
-```
-
-- Include List:
-```
-style static/css/list
-ul
-    <for a in var>
-    li Value #a
-    h1(class='h1-red') test
-    ul
-        <for w in var>
-        li Another #w
-        <endfor>
+    <for inv in invoices>
+        li Invoice Number: #inv.id
     <endfor>
 ```
 
-- `style` static/css/style.css
+---
+
+## 📦 Preloaded Templates (Built-in Magic)
+
+Instead of manually crafting standard HTML configurations like `ul/li` and `table` setups, Sucuri comes packed with pre-compiled macros for lists and tables to drastically speed up repetitive boilerplate code! 
+
+### 1. Lists & Checkboxes
+Pass ANY variable containing an Array, and use the `list()` built-in to render an entire list matrix automatically.
+
+**Python Context:** `{"my_array": ["Apple", "Orange"], "opts": ["Apple"]}`
+
+**Unordered List:**
+```pug
+list(my_array class="ul-squares")
 ```
-h1 {
-    color: blue;
+**Result:**
+```html
+<ul class="ul-squares">
+    <li> Apple </li>
+    <li> Orange </li>
+</ul>
+```
+
+**Checkboxes:** (Just provide the secondary array containing the checked values!)
+```pug
+list(my_array opts class="survey")
+```
+**Result:**
+```html
+<input type="checkbox" id="ck-Apple" checked="checked">Apple
+<input type="checkbox" id="ck-Orange">Orange
+```
+
+### 2. Tables
+Need a comprehensive HTML table constructed in one go? The `table()` syntax takes header arrays, rows matrices, and footer arrays automatically!
+
+**Python Context:**
+```python
+context = {
+    "heads": ["Name", "Age"],
+    "rows": [["Alice", 21], ["Bob", 45]],
+    "footers": ["End", "End"]
 }
 ```
 
-- `style` static/css/list.css
+**Sucuri:**
+```pug
+table(heads rows footers class="table" id="tb-authors")
 ```
-.h1-red {
-    color: red;
-}
+**Result:**
+```html
+<table class="table" id="tb-authors">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Age</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Alice</td>
+            <td>21</td>
+        </tr>
+        <tr>
+            <td>Bob</td>
+            <td>45</td>
+        </tr>
+    </tbody>
+    <tfoot>
+        <tr>
+            <td>End</td>
+            <td>End</td>
+        </tr>
+    </tfoot>
+</table>
+```
+*(Positional order: Headers array, Data Matrix array, Footer array.)*
+
+---
+
+## 🧩 Modularity: Includes, Styles & Scripts
+Sucuri acts efficiently as an asset distributor through macro tagging and external inclusions. The engine caches everything natively during execution. 
+
+### Including Other `.suc` files
+Declare your macro inclusions at the top using `include`, and instantiate them using the `+` sign.
+
+*`modules/button.suc`:*
+```pug
+button(class='btn-primary') {text}
 ```
 
-- `script` static/js/script.js
-```
-function example() {
-    console.log('test');
-}
+*`index.suc`:*
+```pug
+include modules/button
+
+html
+    body
+        h1 Welcome
+        +button
 ```
 
-- Result:
-```
-<html>
-   <head></head>
-   <body>
-      <h1>Hello
-         Title
-         More
-      </h1>
-      <a href="#">Hello! I'm here!</a>
-      <h1>Test</h1>
-      <ul>
-         <li>Value 1</li>
-         <h1 class="h1-red">test</h1>
-         <ul>
-            <li>Another 1</li>
-            <li>Another 2</li>
-            <li>Another 3</li>
-            <li>Another 4</li>
-         </ul>
-         <li>Value 2</li>
-         <h1 class="h1-red">test</h1>
-         <ul>
-            <li>Another 1</li>
-            <li>Another 2</li>
-            <li>Another 3</li>
-            <li>Another 4</li>
-         </ul>
-         <li>Value 3</li>
-         <h1 class="h1-red">test</h1>
-         <ul>
-            <li>Another 1</li>
-            <li>Another 2</li>
-            <li>Another 3</li>
-            <li>Another 4</li>
-         </ul>
-         <li>Value 4</li>
-         <h1 class="h1-red">test</h1>
-         <ul>
-            <li>Another 1</li>
-            <li>Another 2</li>
-            <li>Another 3</li>
-            <li>Another 4</li>
-         </ul>
-      </ul>
-      <style>h1 {
-         color: blue;
-         }.h1-red {
-         color: red;
-         }
-      </style>
-      <script>function example() {
-         console.log('test');
-         }
-      </script>
-   </body>
-</html>
+### Injecting CSS Styles and JS Scripts
+Need global JS or CSS appended without manually crafting raw headers/footers everywhere? Merely use `style` and `script` top-level declarations, supplying their raw path! They will be automatically wrapped in `<style>` and `<script>` HTML tags and beautifully appended to the file.
+
+```pug
+style static/css/global.css
+script static/js/app.js
+
+html
+    body
+        h1 Wow!
 ```
