@@ -4,6 +4,12 @@ on:
   pull_request_target:
     types: [closed]
     branches: [master]
+    paths-ignore:
+      - 'README.md'
+      - 'AUTHORS'
+      - 'LICENSE.txt'
+      - 'MANIFEST.in'
+      - 'pytest.ini'
   workflow_dispatch:
     inputs:
       version:
