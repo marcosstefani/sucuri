@@ -157,6 +157,34 @@ input(type="checkbox" checked)
 <input type="checkbox" checked>
 ```
 
+### CSS Shortcuts
+Sucuri supports PugJS-style CSS shorthand for `class` and `id` attributes. Use `.class-name` and `#id-name` directly on any tag — or even without a tag name to implicitly create a `<div>`.
+
+```pug
+div.container
+    p.card-text Text
+
+#app.wrapper
+    h1 Hello
+
+section#main.content.active
+    span Done
+```
+**Output:**
+```html
+<div class="container">
+    <p class="card-text">Text</p>
+</div>
+<div id="app" class="wrapper">
+    <h1>Hello</h1>
+</div>
+<section id="main" class="content active">
+    <span>Done</span>
+</section>
+```
+
+---
+
 ### Dynamic Variables (Context)
 Variables passed by Python's `context` can be effortlessly embedded directly into your text with `{}`. Sucuri also resolves **deeply nested context**. 
 
@@ -168,6 +196,39 @@ div(class="profile")
     h1 Hello {user.name}!
     span User ID is {user.id}
 ```
+
+### Filters
+Apply built-in transformations to any variable using the pipe `|` operator. Filters can be chained.
+
+| Filter  | Description                                      |
+|---------|--------------------------------------------------|
+| `upper` | Converts text to UPPERCASE                       |
+| `lower` | Converts text to lowercase                       |
+| `title` | Capitalizes The First Letter Of Each Word        |
+| `safe`  | Renders raw HTML without escaping *(bypass XSS protection — use carefully!)* |
+
+```pug
+h1 {title | upper}
+p {subtitle | lower}
+span {author | title}
+div {raw_html | safe}
+```
+
+Filters also work inside `<for>` loops via the `#` syntax:
+
+```pug
+<for item in products>
+    li #item.name | title
+<endfor>
+```
+
+Filters can be chained in sequence:
+
+```pug
+span {label | lower | title}
+```
+
+---
 
 ### Control Flow
 You can handle logic natively in `.suc` files.
@@ -292,6 +353,91 @@ html
         +button
 ```
 
+#### Passing Parameters to Macros
+You can pass inline parameters to any macro directly at the call site using the `()` syntax. Parameters override context variables only for that macro invocation.
+
+*`inc/card.suc`:*
+```pug
+div.card
+    h2 {title}
+    p {type}
+```
+
+*`index.suc`:*
+```pug
+include inc/card
+
++card(title="Warning" type="danger")
++card(title="Success" type="info")
+```
+**Output:**
+```html
+<div class="card">
+    <h2>Warning</h2>
+    <p>danger</p>
+</div>
+<div class="card">
+    <h2>Success</h2>
+    <p>info</p>
+</div>
+```
+
+---
+
+### Template Inheritance (`extends` / `block`)
+Sucuri supports full template inheritance. A **parent layout** defines named `block` regions, and **child templates** extend it with `extends`, overriding only the blocks they need.
+
+*`layout.suc`:*
+```pug
+html
+    head
+        title {title}
+    body
+        div(id="content")
+            block content
+        div(id="footer")
+            block footer
+```
+
+*`page.suc`:*
+```pug
+extends layout
+
+block content
+    h1 Welcome to the Home Page
+    p Here comes the content.
+
+block footer
+    p Page Footer
+```
+
+**Python:**
+```python
+html = template("page.suc", {"title": "My Site"})
+```
+
+**Output:**
+```html
+<html>
+    <head>
+        <title>My Site</title>
+    </head>
+    <body>
+        <div id="content">
+            <h1>Welcome to the Home Page</h1>
+            <p>Here comes the content.</p>
+        </div>
+        <div id="footer">
+            <p>Page Footer</p>
+        </div>
+    </body>
+</html>
+```
+
+> Blocks not overridden by the child template render their default content from the parent.
+
+---
+
 ### Injecting CSS Styles and JS Scripts
 Need global JS or CSS appended without manually crafting raw headers/footers everywhere? Merely use `style` and `script` top-level declarations, supplying their raw path! They will be automatically wrapped in `<style>` and `<script>` HTML tags and beautifully appended to the file.
 
@@ -303,3 +449,77 @@ html
     body
         h1 Wow!
 ```
+
+---
+
+## 🔒 Security
+
+### XSS Protection
+By default, **all variables are automatically HTML-escaped** before rendering. This prevents cross-site scripting (XSS) attacks from untrusted context values.
+
+**Python Context:** `{"msg": "<script>alert(1)</script>"}`
+
+```pug
+h1 {msg}
+```
+**Output:**
+```html
+<h1>&lt;script&gt;alert(1)&lt;/script&gt;</h1>
+```
+
+To render **trusted raw HTML** intentionally, use the `safe` filter:
+
+```pug
+div {html_content | safe}
+```
+
+> **Warning:** Only use `safe` on content you fully control. Never apply it to user-supplied input.
+
+---
+
+## ⚙️ Advanced: Environment & Custom Filters
+
+For greater control — custom filters, isolated environments, or multi-app setups — use the `Environment` class directly instead of the top-level `template()` function.
+
+### Registering Custom Filters
+
+```python
+from sucuri import Environment
+
+env = Environment()
+
+@env.register_filter('exclaim')
+def exclaim(val):
+    return f"{val}!!!"
+
+env.register_filter('reverse', lambda x: str(x)[::-1])
+
+html = env.template("templates/index.suc", {"title": "Hello"})
+```
+
+Custom filters are used in templates exactly like built-in ones:
+
+```pug
+h1 {title | exclaim}
+span {title | exclaim | reverse}
+```
+
+Custom filters also work inside loops:
+
+```pug
+<for item in items>
+    li #item | exclaim
+<endfor>
+```
+
+### Multiple Environments
+Each `Environment` instance has its own filter registry and base directory, making it safe to run isolated configurations side by side (e.g., multiple apps in the same process).
+
+```python
+env_a = Environment(base_dir="templates/app_a")
+env_b = Environment(base_dir="templates/app_b")
+
+env_a.register_filter('shout', lambda v: v.upper() + "!")
+# env_b has no 'shout' filter — fully isolated
+```
+
