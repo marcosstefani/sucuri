@@ -4,7 +4,7 @@ from sucuri.parser import parse_sucuri
 from sucuri.compiler import SucuriCompiler
 from sucuri.rendering import template
 
-BASE_DIR = os.path.dirname(__file__)
+BASE_DIR = os.path.join(os.path.dirname(__file__), "templates")
 
 def get_file(name):
     return os.path.join(BASE_DIR, name)
@@ -18,14 +18,12 @@ def test_full_rendering_from_file():
     assert "<style>body { background: red; }\n</style>" in html # via style
 
 def test_parser_and_inline_text():
-    tree = parse_sucuri('html\n    body\n        h1 Title\n            | Desc')
-    html = SucuriCompiler({}, base_dir=BASE_DIR).compile(tree)
+    html = template(get_file("test_inline_text.suc"), {})
     assert '<h1>Title' in html
     assert 'Desc' in html
 
 def test_attributes_parsing():
-    tree = parse_sucuri('html\n    a(href="#" target="_blank") Link\n    input(type="checkbox" checked)')
-    html = SucuriCompiler({}, base_dir=BASE_DIR).compile(tree)
+    html = template(get_file("test_attributes.suc"), {})
     assert '<a href="#" target="_blank">Link</a>' in html
     assert '<input type="checkbox" checked>' in html
 
@@ -57,8 +55,7 @@ def test_list_checkboxes():
 
 def test_list_checkboxes_custom_variable():
     context = {"my_items": ['one', 'two', 'five'], "my_checked": ['two']}
-    tree = parse_sucuri('list(my_items my_checked class="hello-class")')
-    html = SucuriCompiler(context, base_dir=BASE_DIR).compile(tree)
+    html = template(get_file("test_checkboxes_custom.suc"), context)
     assert '<input type="checkbox" id="ck-one">one' in html
     assert '<input type="checkbox" id="ck-two" checked="checked">two' in html
     assert '<input type="checkbox" id="ck-five">five' in html
