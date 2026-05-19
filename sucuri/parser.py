@@ -27,7 +27,8 @@ define_block_stmt: "block" WS_INLINE BLOCK_NAME _NL [_INDENT block _DEDENT]
 include_stmt: "include" WS_INLINE PATH
 style_stmt: "style" WS_INLINE PATH
 script_stmt: "script" WS_INLINE PATH
-macro_stmt: "+" PATH ["(" attributes ")"] [WS_INLINE TEXT]? _NL [_INDENT block _DEDENT]
+macro_stmt: "+" PATH [macro_attrs] [WS_INLINE TEXT]
+macro_attrs: "(" attributes ")"
 
 if_stmt: "<if" WS_INLINE CONDITION ">" _NL block "<endif>" _NL
 for_stmt: "<for" WS_INLINE FOR_EXPR ">" _NL block "<endfor>" _NL
