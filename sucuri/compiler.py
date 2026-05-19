@@ -343,7 +343,7 @@ class SucuriCompiler:
             elif isinstance(child, Tree) and child.data == "block":
                 block_node = child
 
-        match = re.match(r'([a-zA-Z0-9_]+)\s+in\s+([a-zA-Z0-9_]+)', expr)
+        match = re.match(r'([a-zA-Z0-9_]+)\s+in\s+([a-zA-Z0-9_\.]+)', expr)
         if match and block_node:
             item_var = match.group(1)
             list_var = match.group(2)

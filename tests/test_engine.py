@@ -47,6 +47,12 @@ def test_nested_for_loop_and_pound_variable():
     assert "<li>Nested 1</li>" in html
     assert "<li>Nested 2</li>" in html
 
+def test_for_nested_var():
+    html = template(get_file("test_for_nested_var.suc"), {"nested": {"list": [1, 2, 3]}})
+    assert "<li>1</li>" in html
+    assert "<li>2</li>" in html
+    assert "<li>3</li>" in html
+
 def test_list_checkboxes():
     html = template(get_file("test_compiler.suc"), {"name": "Test", "items": [1, 2], "checked": [1]})
     assert 'type="checkbox" id="ck-1" checked="checked"' in html
