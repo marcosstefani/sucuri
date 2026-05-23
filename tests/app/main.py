@@ -47,5 +47,27 @@ def add_product(request):
     return {"ok": True}
 
 
+@app.get("/api/product/<index>")
+def get_product(index):
+    """Dynamic GET — return a single product by index."""
+    try:
+        product = state.data["products"][int(index)]
+        return {"ok": True, "product": product}
+    except (IndexError, ValueError):
+        return {"ok": False, "error": "product not found"}
+
+
+@app.post("/api/product/<index>/price")
+def update_price_by_index(request, index):
+    """Dynamic POST — update a product's price by index."""
+    try:
+        new_price = request.json.get("price", "0")
+        state.data["products"][int(index)]["price"] = new_price
+        state.notify("products")
+        return {"ok": True}
+    except (IndexError, ValueError):
+        return {"ok": False, "error": "product not found"}
+
+
 if __name__ == "__main__":
     app.run(port=8080)

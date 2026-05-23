@@ -23,6 +23,20 @@ html
           input(type="number" id="newPrice" placeholder="Price" step="0.01")
           button(onclick="addProduct()") Add
 
+        h2 Dynamic routes
+
+        div.form
+          label GET /api/product/&lt;index&gt;
+          input(type="number" id="getIndex" value="0" min="0")
+          button(onclick="getProduct()") Fetch
+          pre(id="getResult" class="result") —
+
+        div.form
+          label POST /api/product/&lt;index&gt;/price
+          input(type="number" id="putIndex" value="0" min="0")
+          input(type="number" id="putPrice" placeholder="New price" step="0.01")
+          button(onclick="updateByIndex()") Update
+
       div.main
         watch products
           <for p in products>

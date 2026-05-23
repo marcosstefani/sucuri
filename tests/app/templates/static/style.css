@@ -101,3 +101,16 @@ button:hover { background: #2d2d5e; }
 
 .cart-summary h3 { margin-bottom: 0.5rem; }
 .cart-summary p  { margin-bottom: 0.25rem; color: #555; }
+
+/* dynamic route result */
+.result {
+  background: #f0f7f3;
+  border: 1px solid #c8e6d4;
+  border-radius: 4px;
+  padding: 0.5rem;
+  font-size: 0.78rem;
+  font-family: monospace;
+  white-space: pre-wrap;
+  color: #2a7a50;
+  margin-top: 0.25rem;
+}

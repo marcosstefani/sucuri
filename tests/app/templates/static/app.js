@@ -24,3 +24,24 @@ function addProduct() {
   document.getElementById('newName').value  = '';
   document.getElementById('newPrice').value = '';
 }
+
+function getProduct() {
+  var index = document.getElementById('getIndex').value;
+  fetch('/api/product/' + index)
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      document.getElementById('getResult').textContent =
+        d.ok ? JSON.stringify(d.product, null, 2) : d.error;
+    });
+}
+
+function updateByIndex() {
+  var index = document.getElementById('putIndex').value;
+  var price = parseFloat(document.getElementById('putPrice').value);
+  if (isNaN(price)) return;
+  fetch('/api/product/' + index + '/price', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Sucuri-Token': window.__sucuri_token || '' },
+    body: JSON.stringify({ price: price.toFixed(2) })
+  });
+}
