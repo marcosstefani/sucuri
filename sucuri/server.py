@@ -2,6 +2,7 @@ import json
 import mimetypes
 import os
 import queue
+import re
 import secrets
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -11,6 +12,20 @@ from urllib.parse import urlparse
 from sucuri.rendering import Environment, _AST_CACHE
 from sucuri.parser import parse_sucuri
 from sucuri.state import State
+
+
+def _compile_route(path):
+    """Convert '/api/<resource>/<id>' to (compiled_regex, [param_names])."""
+    param_names = []
+    parts = re.split(r'(<[^>]+>)', path)
+    pattern = ''
+    for part in parts:
+        if part.startswith('<') and part.endswith('>'):
+            param_names.append(part[1:-1])
+            pattern += '([^/]+)'
+        else:
+            pattern += re.escape(part)
+    return re.compile(f'^{pattern}$'), param_names
 
 
 # ---------------------------------------------------------------------------
@@ -109,7 +124,7 @@ class SucuriApp:
     def __init__(self, template_dir="."):
         self.template_dir = os.path.abspath(template_dir)
         self._env = Environment(base_dir=self.template_dir)
-        self._routes = {}           # (method, path) -> callable
+        self._routes = []           # list of (method, regex, param_names, callable)
         self._sse_clients = []      # list of queue.Queue
         self._sse_lock = threading.Lock()
         self._current_template = None   # absolute path of the last rendered template
@@ -155,18 +170,30 @@ class SucuriApp:
         return html
 
     def get(self, path):
-        """Register a GET route handler."""
+        """Register a GET route handler. Supports '<param>' placeholders."""
         def decorator(fn):
-            self._routes[("GET", path)] = fn
+            regex, params = _compile_route(path)
+            self._routes.append(("GET", regex, params, fn))
             return fn
         return decorator
 
     def post(self, path):
-        """Register a POST route handler."""
+        """Register a POST route handler. Supports '<param>' placeholders."""
         def decorator(fn):
-            self._routes[("POST", path)] = fn
+            regex, params = _compile_route(path)
+            self._routes.append(("POST", regex, params, fn))
             return fn
         return decorator
+
+    def _match_route(self, method, path):
+        """Return (handler, params_dict) for the first matching route, or (None, {})."""
+        for (m, regex, param_names, fn) in self._routes:
+            if m != method:
+                continue
+            match = regex.match(path)
+            if match:
+                return fn, dict(zip(param_names, match.groups()))
+        return None, {}
 
     def run(self, port=None, host=None):
         """Start the live server. Blocks until Ctrl-C."""
@@ -193,16 +220,16 @@ class SucuriApp:
                 if path.startswith("/static/"):
                     self._serve_static(path)
                     return
-                handler = app._routes.get(("GET", path))
+                handler, params = app._match_route("GET", path)
                 if handler is None:
                     self.send_error(404, "Not found")
                     return
-                self._respond(handler())
+                self._respond(handler(**params))
 
             # --- POST --------------------------------------------------
             def do_POST(self):
                 path = urlparse(self.path).path
-                handler = app._routes.get(("POST", path))
+                handler, params = app._match_route("POST", path)
                 if handler is None:
                     self.send_error(404, "Not found")
                     return
@@ -221,7 +248,7 @@ class SucuriApp:
                         return
                 length = int(self.headers.get("Content-Length", 0))
                 raw = self.rfile.read(length) if length else b""
-                result = handler(_Request(raw))
+                result = handler(_Request(raw), **params)
                 # Rotate token after every successful authenticated request
                 if app._protected:
                     with app._token_lock:
