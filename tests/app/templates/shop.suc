@@ -49,6 +49,17 @@ html
           input(type="number" id="delIndex" value="0" min="0")
           button(onclick="deleteProduct()") Delete
 
+        h2 Error handlers
+
+        div.form
+          label Navigate to trigger a 404:
+          a(href="/this-does-not-exist" target="_blank") Open /this-does-not-exist
+
+        div.form
+          label Trigger a 500 via GET:
+          button(onclick="triggerError()") Trigger 500
+          pre(id="errorResult" class="result") —
+
       div.main
         watch products
           <for p in products>

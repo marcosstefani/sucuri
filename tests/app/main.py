@@ -95,5 +95,28 @@ def delete_product(request, index):
         return {"ok": False, "error": "product not found"}
 
 
+@app.get("/api/error-demo")
+def error_demo():
+    """Intentionally raises to demonstrate the 500 handler."""
+    raise RuntimeError("This is a demo error!")
+
+
+@app.error(404)
+def not_found():
+    return """
+    <html><head><title>404</title></head>
+    <body style="font-family:system-ui;text-align:center;padding:4rem">
+      <h1 style="font-size:4rem;color:#1a1a2e">404</h1>
+      <p>Page not found.</p>
+      <a href="/">Go back</a>
+    </body></html>
+    """
+
+
+@app.error(500)
+def server_error(exc):
+    return {"error": str(exc), "type": type(exc).__name__}
+
+
 if __name__ == "__main__":
     app.run(port=8080)

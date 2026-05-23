@@ -65,3 +65,11 @@ function deleteProduct() {
     headers: { 'X-Sucuri-Token': window.__sucuri_token || '' }
   });
 }
+
+function triggerError() {
+  fetch('/api/error-demo')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      document.getElementById('errorResult').textContent = JSON.stringify(d, null, 2);
+    });
+}
