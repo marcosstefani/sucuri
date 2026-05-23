@@ -275,8 +275,7 @@ class SucuriApp:
         server = _ThreadingHTTPServer((host, port), _Handler)
         print(f"Sucuri live server → http://{host}:{port}  (Ctrl-C to stop)")
         if self._protected:
-            print(f"  Protected  → X-Sucuri-Token: {self._token}")
-            print( "  Token rotates after each request. Use --public to disable.")
+            print( "  Protected  → token rotates after each request. Use --public to disable.")
         else:
             print( "  Public mode → non-GET endpoints have no token protection.")
         try:
