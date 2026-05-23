@@ -47,6 +47,19 @@ def add_product(request):
     return {"ok": True}
 
 
+@app.post("/api/product/add-form")
+def add_product_form(request):
+    name  = request.form.get("name", "").strip()
+    price = request.form.get("price", "0")
+
+    if name:
+        state.data["products"].append({"name": name, "price": price})
+        state.notify("products")
+        return {"ok": True}
+
+    return {"ok": False, "error": "name required"}
+
+
 @app.get("/api/product/<index>")
 def get_product(index):
     """Dynamic GET — return a single product by index."""

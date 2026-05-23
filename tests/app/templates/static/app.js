@@ -73,3 +73,33 @@ function triggerError() {
       document.getElementById('errorResult').textContent = JSON.stringify(d, null, 2);
     });
 }
+
+/* ---- modal de cadastro (form data demo) ---- */
+function openModal() {
+  document.getElementById('modalOverlay').classList.add('open');
+  document.getElementById('modalName').focus();
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.getElementById('productForm').reset();
+}
+
+function overlayClick(e) {
+  if (e.target === e.currentTarget) { closeModal(); }
+}
+
+function submitProductForm(e) {
+  e.preventDefault();
+  var body = new URLSearchParams(new FormData(e.target));
+  fetch('/api/product/add-form', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-Sucuri-Token': window.__sucuri_token || ''
+    },
+    body: body.toString()
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) { if (d.ok) { closeModal(); } });
+}
