@@ -29,7 +29,7 @@ def _compile_route(path):
 
 
 # Default favicon: the Sucuri logo bundled with the package.
-_FAVICON_PATH = os.path.join(os.path.dirname(__file__), "favicon.png")
+_FAVICON_PATH = os.path.join(os.path.dirname(__file__), "assets", "favicon.png")
 
 
 # ---------------------------------------------------------------------------

@@ -3,7 +3,7 @@
 include LICENSE.txt
 
 # Package assets
-include sucuri/favicon.png
+include sucuri/assets/favicon.png
 
 # Include the data files
 recursive-include data *
