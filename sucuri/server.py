@@ -28,6 +28,17 @@ def _compile_route(path):
     return re.compile(f'^{pattern}$'), param_names
 
 
+# Minimal SVG favicon used when the app has no favicon of its own.
+_SUCURI_FAVICON_SVG = (
+    b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
+    b'<rect width="32" height="32" rx="6" fill="#1a1a2e"/>'
+    b'<text x="16" y="24" text-anchor="middle"'
+    b' font-family="Georgia,serif" font-weight="bold"'
+    b' font-size="23" fill="#2a9d5c">S</text>'
+    b'</svg>'
+)
+
+
 # ---------------------------------------------------------------------------
 # JS snippet injected into every rendered page.
 # Opens an SSE connection, replaces changed watch blocks, and keeps the
@@ -252,8 +263,12 @@ class SucuriApp:
                     self._handle_sse()
                     return
                 if path == "/favicon.ico":
-                    self.send_response(204)
-                    self.end_headers()
+                    # Prefer a user-supplied favicon in static/
+                    for ext in ("ico", "svg", "png"):
+                        if os.path.isfile(os.path.join(app.template_dir, "static", f"favicon.{ext}")):
+                            self._serve_static(f"/static/favicon.{ext}")
+                            return
+                    self._serve_default_favicon()
                     return
                 if path.startswith("/static/"):
                     self._serve_static(path)
@@ -333,6 +348,14 @@ class SucuriApp:
                     except Exception:
                         pass
                 self.send_error(code)
+
+            def _serve_default_favicon(self):
+                self.send_response(200)
+                self.send_header("Content-Type", "image/svg+xml")
+                self.send_header("Content-Length", str(len(_SUCURI_FAVICON_SVG)))
+                self.send_header("Cache-Control", "max-age=86400")
+                self.end_headers()
+                self.wfile.write(_SUCURI_FAVICON_SVG)
 
             def _serve_static(self, url_path):
                 rel = url_path[len("/static/"):]
