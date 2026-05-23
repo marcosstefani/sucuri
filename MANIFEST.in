@@ -2,5 +2,8 @@
 # Include the license file
 include LICENSE.txt
 
+# Package assets
+include sucuri/favicon.png
+
 # Include the data files
 recursive-include data *

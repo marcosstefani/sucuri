@@ -28,15 +28,8 @@ def _compile_route(path):
     return re.compile(f'^{pattern}$'), param_names
 
 
-# Minimal SVG favicon used when the app has no favicon of its own.
-_SUCURI_FAVICON_SVG = (
-    b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
-    b'<rect width="32" height="32" rx="6" fill="#1a1a2e"/>'
-    b'<text x="16" y="24" text-anchor="middle"'
-    b' font-family="Georgia,serif" font-weight="bold"'
-    b' font-size="23" fill="#2a9d5c">S</text>'
-    b'</svg>'
-)
+# Default favicon: the Sucuri logo bundled with the package.
+_FAVICON_PATH = os.path.join(os.path.dirname(__file__), "favicon.png")
 
 
 # ---------------------------------------------------------------------------
@@ -350,12 +343,20 @@ class SucuriApp:
                 self.send_error(code)
 
             def _serve_default_favicon(self):
+                try:
+                    with open(_FAVICON_PATH, "rb") as f:
+                        data = f.read()
+                    mime = "image/png"
+                except OSError:
+                    self.send_response(204)
+                    self.end_headers()
+                    return
                 self.send_response(200)
-                self.send_header("Content-Type", "image/svg+xml")
-                self.send_header("Content-Length", str(len(_SUCURI_FAVICON_SVG)))
+                self.send_header("Content-Type", mime)
+                self.send_header("Content-Length", str(len(data)))
                 self.send_header("Cache-Control", "max-age=86400")
                 self.end_headers()
-                self.wfile.write(_SUCURI_FAVICON_SVG)
+                self.wfile.write(data)
 
             def _serve_static(self, url_path):
                 rel = url_path[len("/static/"):]
