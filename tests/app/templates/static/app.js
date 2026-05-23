@@ -5,7 +5,7 @@ function updatePrice() {
 
   fetch('/api/product/price', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Sucuri-Token': window.__sucuri_token || '' },
     body: JSON.stringify({ name: name, price: price.toFixed(2) })
   });
 }
@@ -17,7 +17,7 @@ function addProduct() {
 
   fetch('/api/product/add', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Sucuri-Token': window.__sucuri_token || '' },
     body: JSON.stringify({ name: name, price: price.toFixed(2) })
   });
 
