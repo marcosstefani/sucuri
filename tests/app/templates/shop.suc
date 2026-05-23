@@ -37,6 +37,18 @@ html
           input(type="number" id="putPrice" placeholder="New price" step="0.01")
           button(onclick="updateByIndex()") Update
 
+        div.form
+          label PUT /api/product/&lt;index&gt; (replace)
+          input(type="number" id="repIndex" value="0" min="0")
+          input(type="text" id="repName" placeholder="New name")
+          input(type="number" id="repPrice" placeholder="New price" step="0.01")
+          button(onclick="replaceProduct()") Replace
+
+        div.form
+          label DELETE /api/product/&lt;index&gt;
+          input(type="number" id="delIndex" value="0" min="0")
+          button(onclick="deleteProduct()") Delete
+
       div.main
         watch products
           <for p in products>

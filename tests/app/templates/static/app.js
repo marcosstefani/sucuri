@@ -45,3 +45,23 @@ function updateByIndex() {
     body: JSON.stringify({ price: price.toFixed(2) })
   });
 }
+
+function replaceProduct() {
+  var index = document.getElementById('repIndex').value;
+  var name  = document.getElementById('repName').value.trim();
+  var price = parseFloat(document.getElementById('repPrice').value);
+  if (!name || isNaN(price)) return;
+  fetch('/api/product/' + index, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'X-Sucuri-Token': window.__sucuri_token || '' },
+    body: JSON.stringify({ name: name, price: price.toFixed(2) })
+  });
+}
+
+function deleteProduct() {
+  var index = document.getElementById('delIndex').value;
+  fetch('/api/product/' + index, {
+    method: 'DELETE',
+    headers: { 'X-Sucuri-Token': window.__sucuri_token || '' }
+  });
+}

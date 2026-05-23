@@ -69,5 +69,31 @@ def update_price_by_index(request, index):
         return {"ok": False, "error": "product not found"}
 
 
+@app.put("/api/product/<index>")
+def replace_product(request, index):
+    """Dynamic PUT — replace a product entirely by index."""
+    try:
+        name  = request.json.get("name", "").strip()
+        price = request.json.get("price", "0")
+        if not name:
+            return {"ok": False, "error": "name required"}
+        state.data["products"][int(index)] = {"name": name, "price": price}
+        state.notify("products")
+        return {"ok": True}
+    except (IndexError, ValueError):
+        return {"ok": False, "error": "product not found"}
+
+
+@app.delete("/api/product/<index>")
+def delete_product(request, index):
+    """Dynamic DELETE — remove a product by index."""
+    try:
+        state.data["products"].pop(int(index))
+        state.notify("products")
+        return {"ok": True}
+    except (IndexError, ValueError):
+        return {"ok": False, "error": "product not found"}
+
+
 if __name__ == "__main__":
     app.run(port=8080)
