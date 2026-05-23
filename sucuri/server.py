@@ -7,7 +7,7 @@ import secrets
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 from sucuri.rendering import Environment, _AST_CACHE
 from sucuri.parser import parse_sucuri
@@ -288,8 +288,9 @@ class SucuriApp:
                         return
                 length = int(self.headers.get("Content-Length", 0))
                 raw = self.rfile.read(length) if length else b""
+                content_type = self.headers.get("Content-Type", "")
                 try:
-                    result = handler(_Request(raw), **params)
+                    result = handler(_Request(raw, content_type), **params)
                 except Exception as exc:
                     self._respond_error(500, exc)
                     return
@@ -441,13 +442,51 @@ class SucuriApp:
                 self._sse_clients.remove(q)
 
 
-class _Request:
-    """Minimal request object passed to POST handlers."""
-    __slots__ = ("body", "json")
+def _parse_urlencoded(body_bytes):
+    """Parse application/x-www-form-urlencoded body → dict."""
+    text = body_bytes.decode("utf-8", errors="replace")
+    parsed = parse_qs(text, keep_blank_values=True)
+    return {k: v[0] if len(v) == 1 else v for k, v in parsed.items()}
 
-    def __init__(self, body_bytes):
+
+def _parse_multipart(body_bytes, content_type):
+    """Parse multipart/form-data body → dict of {name: str | bytes}."""
+    m = re.search(r'boundary=(?:"([^"]+)"|([^\s;]+))', content_type, re.IGNORECASE)
+    if not m:
+        return {}
+    boundary = (m.group(1) or m.group(2)).encode("latin-1")
+    result = {}
+    for part in body_bytes.split(b"--" + boundary)[1:]:
+        if part.lstrip(b"\r\n").startswith(b"--"):
+            break
+        sep = b"\r\n\r\n" if b"\r\n\r\n" in part else b"\n\n"
+        if sep not in part:
+            continue
+        headers_raw, body = part.split(sep, 1)
+        body = body.rstrip(b"\r\n")
+        cd = re.search(rb';\s*name="([^"]+)"', headers_raw, re.IGNORECASE)
+        if not cd:
+            continue
+        name = cd.group(1).decode("utf-8", errors="replace")
+        fn = re.search(rb'filename="([^"]*)"', headers_raw, re.IGNORECASE)
+        result[name] = body if fn else body.decode("utf-8", errors="replace")
+    return result
+
+
+class _Request:
+    """Minimal request object passed to mutation handlers."""
+    __slots__ = ("body", "json", "form")
+
+    def __init__(self, body_bytes, content_type=""):
         self.body = body_bytes
+        ct = content_type.lower()
         try:
             self.json = json.loads(body_bytes)
         except Exception:
             self.json = {}
+        if "application/x-www-form-urlencoded" in ct:
+            self.form = _parse_urlencoded(body_bytes)
+        elif "multipart/form-data" in ct:
+            self.form = _parse_multipart(body_bytes, content_type)
+        else:
+            self.form = {}
