@@ -32,6 +32,13 @@ class _ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
     """HTTPServer that handles each request in its own thread."""
     daemon_threads = True
 
+    def handle_error(self, request, client_address):
+        """Suppress noisy-but-harmless connection errors (browser closed tab, etc)."""
+        import sys
+        if sys.exc_info()[0] in (ConnectionResetError, BrokenPipeError, ConnectionAbortedError):
+            return
+        super().handle_error(request, client_address)
+
 
 def _extract_watch_block(html, key):
     """Return the rendered HTML for a single watch block, including its wrapper div."""
@@ -164,6 +171,10 @@ class SucuriApp:
                 path = urlparse(self.path).path
                 if path == "/__sucuri__/events":
                     self._handle_sse()
+                    return
+                if path == "/favicon.ico":
+                    self.send_response(204)
+                    self.end_headers()
                     return
                 handler = app._routes.get(("GET", path))
                 if handler is None:
