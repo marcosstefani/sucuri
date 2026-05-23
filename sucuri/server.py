@@ -133,6 +133,7 @@ class SucuriApp:
         self._protected  = os.environ.get("SUCURI_PUBLIC") != "1"
         self._token      = secrets.token_hex(32)
         self._token_lock = threading.Lock()
+        self._error_handlers = {}   # status_code -> callable
 
     # ------------------------------------------------------------------
     # Public API
@@ -201,6 +202,27 @@ class SucuriApp:
             return fn
         return decorator
 
+    def error(self, code):
+        """Register a custom error handler for an HTTP status code.
+
+        The 500 handler receives the exception as its first argument.
+        All other handlers receive no arguments.
+
+        Example::
+
+            @app.error(404)
+            def not_found():
+                return "<h1>404 — Page not found</h1>"
+
+            @app.error(500)
+            def server_error(exc):
+                return {"error": str(exc)}
+        """
+        def decorator(fn):
+            self._error_handlers[code] = fn
+            return fn
+        return decorator
+
     def _match_route(self, method, path):
         """Return (handler, params_dict) for the first matching route, or (None, {})."""
         for (m, regex, param_names, fn) in self._routes:
@@ -238,16 +260,19 @@ class SucuriApp:
                     return
                 handler, params = app._match_route("GET", path)
                 if handler is None:
-                    self.send_error(404, "Not found")
+                    self._respond_error(404)
                     return
-                self._respond(handler(**params))
+                try:
+                    self._respond(handler(**params))
+                except Exception as exc:
+                    self._respond_error(500, exc)
 
             # --- POST / PUT / DELETE -----------------------------------
             def _handle_mutation(self, method):
                 path = urlparse(self.path).path
                 handler, params = app._match_route(method, path)
                 if handler is None:
-                    self.send_error(404, "Not found")
+                    self._respond_error(404)
                     return
                 if app._protected:
                     provided = self.headers.get("X-Sucuri-Token", "")
@@ -263,7 +288,11 @@ class SucuriApp:
                         return
                 length = int(self.headers.get("Content-Length", 0))
                 raw = self.rfile.read(length) if length else b""
-                result = handler(_Request(raw), **params)
+                try:
+                    result = handler(_Request(raw), **params)
+                except Exception as exc:
+                    self._respond_error(500, exc)
+                    return
                 if app._protected:
                     with app._token_lock:
                         app._token = secrets.token_hex(32)
@@ -276,21 +305,33 @@ class SucuriApp:
             def do_DELETE(self): self._handle_mutation("DELETE")
 
             # --- helpers -----------------------------------------------
-            def _respond(self, result):
+            def _respond(self, result, status=200):
                 if isinstance(result, str):
                     body = result.encode("utf-8")
-                    self.send_response(200)
+                    self.send_response(status)
                     self.send_header("Content-Type", "text/html; charset=utf-8")
                     self.send_header("Content-Length", str(len(body)))
                     self.end_headers()
                     self.wfile.write(body)
                 elif isinstance(result, dict):
                     body = json.dumps(result).encode("utf-8")
-                    self.send_response(200)
+                    self.send_response(status)
                     self.send_header("Content-Type", "application/json")
                     self.send_header("Content-Length", str(len(body)))
                     self.end_headers()
                     self.wfile.write(body)
+
+            def _respond_error(self, code, exc=None):
+                """Call custom error handler if registered, else fall back to default."""
+                handler = app._error_handlers.get(code)
+                if handler is not None:
+                    try:
+                        result = handler(exc) if exc is not None else handler()
+                        self._respond(result, status=code)
+                        return
+                    except Exception:
+                        pass
+                self.send_error(code)
 
             def _serve_static(self, url_path):
                 rel = url_path[len("/static/"):]
