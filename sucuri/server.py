@@ -315,6 +315,26 @@ class SucuriApp:
 
             # --- helpers -----------------------------------------------
             def _respond(self, result, status=200):
+                # redirect
+                if isinstance(result, _Redirect):
+                    self.send_response(result.status)
+                    self.send_header("Location", result.url)
+                    self.send_header("Content-Length", "0")
+                    self.end_headers()
+                    return
+                # explicit Response wrapper
+                if isinstance(result, Response):
+                    if result.content_type is not None:
+                        body = result.body if isinstance(result.body, bytes) \
+                               else str(result.body).encode("utf-8")
+                        self.send_response(result.status)
+                        self.send_header("Content-Type", result.content_type)
+                        self.send_header("Content-Length", str(len(body)))
+                        self.end_headers()
+                        self.wfile.write(body)
+                        return
+                    self._respond(result.body, status=result.status)
+                    return
                 if isinstance(result, str):
                     body = result.encode("utf-8")
                     self.send_response(status)
@@ -514,3 +534,30 @@ class _Request:
             self.form = _parse_multipart(body_bytes, content_type)
         else:
             self.form = {}
+
+
+class Response:
+    """Return from a route handler to set a custom HTTP status code or content type.
+
+    ``body`` can be a str (sent as text/html), a dict (sent as application/json),
+    or bytes (requires an explicit ``content_type``).
+    """
+    __slots__ = ("body", "status", "content_type")
+
+    def __init__(self, body, status=200, content_type=None):
+        self.body = body
+        self.status = status
+        self.content_type = content_type
+
+
+class _Redirect:
+    __slots__ = ("url", "status")
+
+    def __init__(self, url, status):
+        self.url = url
+        self.status = status
+
+
+def redirect(url, status=302):
+    """Return an HTTP redirect response from any route handler."""
+    return _Redirect(url, status)

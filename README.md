@@ -654,6 +654,65 @@ def delete_product(request, index):
 
 ---
 
+### Response Helpers
+
+By default, routes return `str` (HTML 200) or `dict` (JSON 200). For any other status code, redirect, or raw bytes, import the helpers from `sucuri.server`:
+
+```python
+from sucuri.server import SucuriApp, Response, redirect
+```
+
+#### `Response(body, status=200, content_type=None)`
+
+Wraps any return value with a custom HTTP status code or content type.
+
+```python
+@app.post("/api/login")
+def login(request):
+    if not valid_credentials(request.json):
+        return Response({"error": "unauthorized"}, status=401)
+    return {"ok": True}
+
+@app.get("/api/item/<id>")
+def get_item(id):
+    item = find(id)
+    if item is None:
+        return Response("<h1>Not found</h1>", status=404)
+    return item
+
+@app.get("/report")
+def report():
+    pdf_bytes = generate_pdf()
+    return Response(pdf_bytes, status=200, content_type="application/pdf")
+```
+
+| Argument | Type | Default | Description |
+|----------|------|---------|-------------|
+| `body` | `str`, `dict`, or `bytes` | — | Response body |
+| `status` | `int` | `200` | HTTP status code |
+| `content_type` | `str \| None` | `None` | Forces a specific Content-Type; auto-detected when `None` |
+
+#### `redirect(url, status=302)`
+
+Returns an HTTP redirect. Works from any GET or mutation handler.
+
+```python
+@app.get("/old-path")
+def old_path():
+    return redirect("/new-path")          # 302 Found
+
+@app.get("/permanent")
+def permanent():
+    return redirect("/new-path", status=301)  # 301 Moved Permanently
+
+@app.post("/api/login")
+def login(request):
+    # authenticate…
+    return redirect("/dashboard")
+```
+
+---
+
 ### Request Object
 
 | Attribute | Type | Description |
@@ -775,4 +834,3 @@ When your app does not provide a favicon, the server automatically serves the Su
 - `static/favicon.ico`
 - `static/favicon.svg`
 - `static/favicon.png`
-
