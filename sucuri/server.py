@@ -185,6 +185,22 @@ class SucuriApp:
             return fn
         return decorator
 
+    def put(self, path):
+        """Register a PUT route handler. Supports '<param>' placeholders."""
+        def decorator(fn):
+            regex, params = _compile_route(path)
+            self._routes.append(("PUT", regex, params, fn))
+            return fn
+        return decorator
+
+    def delete(self, path):
+        """Register a DELETE route handler. Supports '<param>' placeholders."""
+        def decorator(fn):
+            regex, params = _compile_route(path)
+            self._routes.append(("DELETE", regex, params, fn))
+            return fn
+        return decorator
+
     def _match_route(self, method, path):
         """Return (handler, params_dict) for the first matching route, or (None, {})."""
         for (m, regex, param_names, fn) in self._routes:
@@ -226,14 +242,13 @@ class SucuriApp:
                     return
                 self._respond(handler(**params))
 
-            # --- POST --------------------------------------------------
-            def do_POST(self):
+            # --- POST / PUT / DELETE -----------------------------------
+            def _handle_mutation(self, method):
                 path = urlparse(self.path).path
-                handler, params = app._match_route("POST", path)
+                handler, params = app._match_route(method, path)
                 if handler is None:
                     self.send_error(404, "Not found")
                     return
-                # Token authentication
                 if app._protected:
                     provided = self.headers.get("X-Sucuri-Token", "")
                     with app._token_lock:
@@ -249,13 +264,16 @@ class SucuriApp:
                 length = int(self.headers.get("Content-Length", 0))
                 raw = self.rfile.read(length) if length else b""
                 result = handler(_Request(raw), **params)
-                # Rotate token after every successful authenticated request
                 if app._protected:
                     with app._token_lock:
                         app._token = secrets.token_hex(32)
                         new_token = app._token
                     app._broadcast_token(new_token)
                 self._respond(result)
+
+            def do_POST(self):   self._handle_mutation("POST")
+            def do_PUT(self):    self._handle_mutation("PUT")
+            def do_DELETE(self): self._handle_mutation("DELETE")
 
             # --- helpers -----------------------------------------------
             def _respond(self, result):
