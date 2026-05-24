@@ -6,6 +6,7 @@ import re
 import secrets
 import threading
 import time
+from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 from urllib.parse import urlparse, parse_qs
@@ -74,25 +75,21 @@ def _watch_files(template_dir, on_change, stop_event, interval=0.4):
 # Opens an SSE connection, replaces changed watch blocks, and keeps the
 # rotating CSRF token in sync with the server.
 # ---------------------------------------------------------------------------
-def _make_sse_script(token=None):
-    """Return the SSE <script> tag to inject. Pass token=None in public mode."""
-    token_js = f'\n  window.__sucuri_token = "{token}";' if token is not None else ''
-    return f"""\
+def _make_sse_script():
+    """Return the SSE <script> tag injected into every rendered page."""
+    return """\
 <script>
-(function () {{{token_js}
+(function () {
   var es = new EventSource('/__sucuri__/events');
-  es.onmessage = function (e) {{
+  es.onmessage = function (e) {
     var d = JSON.parse(e.data);
     var el = document.querySelector('[data-suc-watch="' + d.id + '"]');
-    if (el) {{ el.outerHTML = d.html; }}
-  }};
-  es.addEventListener('token', function (e) {{
-    window.__sucuri_token = e.data;
-  }});
-  es.addEventListener('reload', function () {{
+    if (el) { el.outerHTML = d.html; }
+  };
+  es.addEventListener('reload', function () {
     window.location.reload();
-  }});
-}}());
+  });
+}());
 </script>"""
 
 
@@ -175,8 +172,7 @@ class SucuriApp:
         self._current_context  = None   # reference to the context dict (state.data)
         # Token protection — disabled when SUCURI_PUBLIC=1
         self._protected  = os.environ.get("SUCURI_PUBLIC") != "1"
-        self._token      = secrets.token_hex(32)
-        self._token_lock = threading.Lock()
+        self._token      = secrets.token_hex(32)   # fixed for server lifetime
         self._error_handlers = {}   # status_code -> callable
 
     # ------------------------------------------------------------------
@@ -205,8 +201,8 @@ class SucuriApp:
 
         html = self._env.template(path, context)
 
-        # Inject SSE listener + current token before </body>
-        sse = _make_sse_script(self._token if self._protected else None)
+        # Inject SSE listener before </body>
+        sse = _make_sse_script()
         if "</body>" in html:
             html = html.replace("</body>", sse + "\n</body>", 1)
         else:
@@ -323,11 +319,11 @@ class SucuriApp:
                     self._respond_error(404)
                     return
                 if app._protected:
-                    provided = self.headers.get("X-Sucuri-Token", "")
-                    with app._token_lock:
-                        valid = secrets.compare_digest(provided, app._token)
-                    if not valid:
-                        body = json.dumps({"error": "invalid or expired token"}).encode()
+                    cookie = SimpleCookie(self.headers.get("Cookie", ""))
+                    csrf = cookie.get("__sucuri_csrf")
+                    provided = csrf.value if csrf else ""
+                    if not secrets.compare_digest(provided, app._token):
+                        body = json.dumps({"error": "invalid or missing CSRF token"}).encode()
                         self.send_response(403)
                         self.send_header("Content-Type", "application/json")
                         self.send_header("Content-Length", str(len(body)))
@@ -342,11 +338,6 @@ class SucuriApp:
                 except Exception as exc:
                     self._respond_error(500, exc)
                     return
-                if app._protected:
-                    with app._token_lock:
-                        app._token = secrets.token_hex(32)
-                        new_token = app._token
-                    app._broadcast_token(new_token)
                 self._respond(result)
 
             def do_POST(self):   self._handle_mutation("POST")
@@ -379,6 +370,11 @@ class SucuriApp:
                     body = result.encode("utf-8")
                     self.send_response(status)
                     self.send_header("Content-Type", "text/html; charset=utf-8")
+                    if app._protected:
+                        self.send_header(
+                            "Set-Cookie",
+                            f"__sucuri_csrf={app._token}; HttpOnly; SameSite=Strict; Path=/"
+                        )
                     self.send_header("Content-Length", str(len(body)))
                     self.end_headers()
                     self.wfile.write(body)
@@ -522,19 +518,6 @@ class SucuriApp:
     def _broadcast(self, key, html):
         data = json.dumps({"id": key, "html": html})
         msg  = f"data: {data}\n\n".encode("utf-8")
-        with self._sse_lock:
-            dead = []
-            for q in self._sse_clients:
-                try:
-                    q.put_nowait(msg)
-                except queue.Full:
-                    dead.append(q)
-            for q in dead:
-                self._sse_clients.remove(q)
-
-    def _broadcast_token(self, token):
-        """Push the new rotating token to all connected SSE clients."""
-        msg = f"event: token\ndata: {token}\n\n".encode("utf-8")
         with self._sse_lock:
             dead = []
             for q in self._sse_clients:
