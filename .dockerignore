@@ -9,7 +9,6 @@
 
 # Tests and docs (not needed in the image)
 tests
-README.md
 AUTHORS
 LICENSE.txt
 MANIFEST.in
