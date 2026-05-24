@@ -12,9 +12,10 @@ class Environment:
     Represents a templating environment that can hold custom plugins, filters,
     and configurations.
     """
-    def __init__(self, base_dir="."):
+    def __init__(self, base_dir=".", watch_enabled=False):
         self.base_dir = base_dir
         self.filters = {}
+        self.watch_enabled = watch_enabled
 
     def register_filter(self, name, filter_func=None):
         if filter_func is None:
@@ -45,7 +46,7 @@ class Environment:
         tree = _AST_CACHE[filepath]
         
         base_dir = os.path.dirname(filepath) if filepath else self.base_dir
-        compiler = SucuriCompiler(context, base_dir=base_dir, filters=self.filters)
+        compiler = SucuriCompiler(context, base_dir=base_dir, filters=self.filters, watch_enabled=self.watch_enabled)
         return compiler.compile(tree)
 
 default_env = Environment()

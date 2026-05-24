@@ -121,4 +121,54 @@ def test_template_inheritance():
     assert "div id=\"footer\"" in html
 
 
+def test_watch_simple_render_ignores_wrapper():
+    """Simple render must output block content without any watch wrapper or markers."""
+    context = {"title": "Shop", "items": ["Apple", "Banana"], "cart_count": 3}
+    html = template(get_file("test_watch.suc"), context)
+
+    # Content inside watch blocks must be present
+    assert "<li>Apple</li>" in html
+    assert "<li>Banana</li>" in html
+    assert "Cart: 3 items" in html
+
+    # No SSE wrapper elements or comments should be emitted
+    assert 'data-suc-watch=' not in html
+    assert '<!--[suc:' not in html
+
+
+def test_watch_compiler_watch_enabled_emits_wrapper():
+    """Compiler with watch_enabled=True must emit the wrapper div and markers."""
+    from sucuri.parser import parse_sucuri
+
+    with open(get_file("test_watch.suc"), "r", encoding="utf-8") as f:
+        source = f.read()
+
+    context = {"title": "Shop", "items": ["Apple", "Banana"], "cart_count": 3}
+    tree = parse_sucuri(source)
+    compiler = SucuriCompiler(context, base_dir=BASE_DIR, watch_enabled=True)
+    html = compiler.compile(tree)
+
+    # Content inside watch blocks must still be present
+    assert "<li>Apple</li>" in html
+    assert "<li>Banana</li>" in html
+    assert "Cart: 3 items" in html
+
+    # Wrapper elements and markers must be present
+    assert 'data-suc-watch="products"' in html
+    assert 'data-suc-watch="cart"' in html
+    assert '<!--[suc:products:start]-->' in html
+    assert '<!--[suc:products:end]-->' in html
+    assert '<!--[suc:cart:start]-->' in html
+    assert '<!--[suc:cart:end]-->' in html
+
+
+def test_watch_multiple_blocks_render_independently():
+    """Each watch block's content is rendered correctly in simple mode."""
+    context = {"title": "T", "items": ["X"], "cart_count": 0}
+    html = template(get_file("test_watch.suc"), context)
+
+    assert "<li>X</li>" in html
+    assert "Cart: 0 items" in html
+    assert 'data-suc-watch=' not in html
+
 

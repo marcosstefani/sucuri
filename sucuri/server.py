@@ -164,7 +164,7 @@ class SucuriApp:
 
     def __init__(self, template_dir="."):
         self.template_dir = os.path.abspath(template_dir)
-        self._env = Environment(base_dir=self.template_dir)
+        self._env = Environment(base_dir=self.template_dir, watch_enabled=True)
         self._routes = []           # list of (method, regex, param_names, callable)
         self._sse_clients = []      # list of queue.Queue
         self._sse_lock = threading.Lock()
