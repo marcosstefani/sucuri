@@ -552,6 +552,16 @@ from sucuri.server import SucuriApp
 app = SucuriApp(template_dir="templates")   # template_dir defaults to "."
 ```
 
+To start the server from Python, call `app.run()` at the bottom of your app file:
+
+```python
+app.run()                             # http://127.0.0.1:8080  (defaults)
+app.run(port=3000)                    # http://127.0.0.1:3000
+app.run(host="0.0.0.0", port=3000)   # bind to all interfaces
+```
+
+> `host` and `port` can also be overridden at launch time via `--host` / `--port` CLI flags or the `SUCURI_HOST` / `SUCURI_PORT` environment variables — no need to change the source file.
+
 ---
 
 ### Reactive State & Live Reload
@@ -583,15 +593,40 @@ html
       p Items: {cart.count} — Total: $ {cart.total}
 ```
 
-Each `watch` block renders as a `<div data-suc-watch="key">` wrapper. When the server detects a change to that key, only that wrapper is replaced in the DOM.
+Each `watch` block renders as a `<div data-suc-watch="key">` wrapper. When the server detects a change to that key, only that wrapper is replaced in the DOM — no full page reload.
+
+> **Using `watch` outside the live server?**  
+> When rendering with `template()`, `Environment.template()`, or any framework integration (Flask, FastAPI, Django…), `watch` blocks are completely transparent. The content inside renders as normal HTML — no wrapper div, no markers. This means you can freely share the same `.suc` templates between the live server and a plain render without any changes.
 
 **Triggering a re-render from a route handler:**
 
+There are two mutation patterns, and they behave differently:
+
 ```python
-# Direct assignment to a top-level key triggers automatically
+# ✅ Top-level reassignment — triggers notify automatically
+state["products"] = updated_list
+
+# ⚠️  Nested mutation (append, pop, dict update…) — must notify manually
 state.data["products"].append({"name": "New", "price": "1.00"})
-state.notify("products")   # manual notify for nested mutations
+state.notify("products")   # push the update to connected browsers
 ```
+
+The rule is simple: **assigning directly to `state["key"]` is automatic; mutating the value inside `state.data["key"]` is manual.**
+
+---
+
+### Automatic Template Reload
+
+The live server also watches every `.suc`, `.css`, `.js`, and `.html` file inside `template_dir`. Whenever you save any of those files during development, **all connected browsers automatically reload the full page** — no manual refresh needed.
+
+This is completely separate from the reactive state updates:
+
+| Trigger | Result |
+|---|---|
+| `state["key"]` assignment or `state.notify("key")` | Only the matching `watch` block is swapped in the DOM — no reload |
+| Any template / CSS / JS file saved on disk | Full page reload in all connected browsers |
+
+No configuration is required — the watcher starts automatically with `app.run()`.
 
 ---
 
@@ -831,3 +866,70 @@ When your app does not provide a favicon, the server automatically serves the Su
 - `static/favicon.ico`
 - `static/favicon.svg`
 - `static/favicon.png`
+
+---
+
+## 🐳 Docker
+
+A pre-built Docker image is available on Docker Hub, so you can containerise any Sucuri app without installing Python locally.
+
+> Replace `latest` with any published version tag if you need a pinned release — e.g. `marcosstefani/sucuri:1.2.3`.
+
+### Using the image as a base
+
+Create a `Dockerfile` in your project root:
+
+```dockerfile
+FROM marcosstefani/sucuri:latest
+
+# Copy your app files into the container
+COPY . .
+
+# Default port is 8080 — expose it
+EXPOSE 8080
+```
+
+Your project structure should look like this:
+
+```
+my-app/
+  Dockerfile
+  app.py            ← SucuriApp entry point
+  templates/
+    index.suc
+    static/
+      style.css
+```
+
+Then build and run:
+
+```bash
+docker build -t my-sucuri-app .
+docker run -p 8080:8080 my-sucuri-app
+```
+
+Your app is now available at `http://localhost:8080`.
+
+### Overriding the entry point
+
+The default `CMD` runs `sucuri serve app.py --host 0.0.0.0`. If your entry file has a different name, override it in your `Dockerfile`:
+
+```dockerfile
+FROM marcosstefani/sucuri:latest
+
+COPY . .
+
+CMD ["sucuri", "serve", "main.py", "--host", "0.0.0.0"]
+```
+
+### Using Docker Compose
+
+```yaml
+services:
+  web:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./templates:/app/templates   # live-reload template edits without rebuilding
+```

@@ -1,0 +1,25 @@
+# Version control
+.git
+.gitignore
+
+# CI / tooling
+.github
+.env
+.pytest_cache
+
+# Tests and docs (not needed in the image)
+tests
+README.md
+AUTHORS
+LICENSE.txt
+MANIFEST.in
+
+# Python build artefacts
+*.egg-info
+__pycache__
+*.pyc
+*.pyo
+
+# Dev dependencies file (pytest etc.)
+requirements.txt
+pytest.ini

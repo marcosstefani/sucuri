@@ -1,0 +1,10 @@
+html
+    body
+        h1 {title}
+        watch products
+            ul
+                <for item in items>
+                li {item}
+                <endfor>
+        watch cart
+            p Cart: {cart_count} items

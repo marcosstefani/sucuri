@@ -4,12 +4,13 @@ import os
 from sucuri.parser import parse_sucuri
 
 class SucuriCompiler:
-    def __init__(self, context=None, base_dir=".", filters=None):
+    def __init__(self, context=None, base_dir=".", filters=None, watch_enabled=False):
         # Shallow copy to prevent the compiler from mutating the caller's dict
         # (e.g. loop variables would otherwise leak into state.data)
         self.context = dict(context) if context else {}
         self.base_dir = base_dir
         self.filters = filters or {}
+        self.watch_enabled = watch_enabled
         self.indent_level = 0
         self.output = []
         self.styles = []
@@ -628,6 +629,12 @@ class SucuriCompiler:
                 block_node = child
 
         if not watch_name:
+            return
+
+        if not self.watch_enabled:
+            # Outside the live server, just render the block contents directly
+            if block_node:
+                self._visit(block_node)
             return
 
         indent = self._get_indent()
