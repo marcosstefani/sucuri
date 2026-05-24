@@ -1,5 +1,5 @@
 import os
-from sucuri.server import SucuriApp
+from sucuri.server import SucuriApp, Response, redirect
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = SucuriApp(template_dir=os.path.join(BASE_DIR, "templates"))
@@ -112,6 +112,26 @@ def delete_product(request, index):
 def error_demo():
     """Intentionally raises to demonstrate the 500 handler."""
     raise RuntimeError("This is a demo error!")
+
+
+# --- Response helpers demo ---------------------------------------------------
+
+@app.get("/demo/redirect")
+def demo_redirect():
+    """Redirects back to home, demonstrating redirect()."""
+    return redirect("/")
+
+
+@app.post("/api/product/add-validated")
+def add_validated(request):
+    """Returns 201 on success, 422 when name is missing."""
+    name  = request.json.get("name", "").strip()
+    price = request.json.get("price", "0")
+    if not name:
+        return Response({"error": "name is required"}, status=422)
+    state.data["products"].append({"name": name, "price": price})
+    state.notify("products")
+    return Response({"ok": True, "total": len(state.data["products"])}, status=201)
 
 
 @app.error(404)

@@ -55,6 +55,19 @@ html
           label Cadastrar produto via HTML form:
           button(onclick="openModal()") Cadastrar produto
 
+        h2 Response helpers
+
+        div.form
+          label redirect() — GET /demo/redirect:
+          a(href="/demo/redirect") Redirect to /
+
+        div.form
+          label Response(body, status=201 or 422):
+          input(type="text" id="valName" placeholder="Nome (vazio = 422)")
+          input(type="number" id="valPrice" placeholder="Preço" step="0.01" value="0.00")
+          button(onclick="addValidated()") POST validado
+          pre(id="validatedResult" class="result") —
+
         h2 Error handlers
 
         div.form

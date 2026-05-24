@@ -74,6 +74,24 @@ function triggerError() {
     });
 }
 
+/* ---- response helpers demo ---- */
+function addValidated() {
+  var name  = document.getElementById('valName').value;
+  var price = parseFloat(document.getElementById('valPrice').value) || 0;
+  fetch('/api/product/add-validated', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Sucuri-Token': window.__sucuri_token || '' },
+    body: JSON.stringify({ name: name, price: price.toFixed(2) })
+  })
+  .then(function(r) {
+    return r.json().then(function(d) { return { status: r.status, data: d }; });
+  })
+  .then(function(res) {
+    document.getElementById('validatedResult').textContent =
+      'HTTP ' + res.status + '\n' + JSON.stringify(res.data, null, 2);
+  });
+}
+
 /* ---- modal de cadastro (form data demo) ---- */
 function openModal() {
   document.getElementById('modalOverlay').classList.add('open');
