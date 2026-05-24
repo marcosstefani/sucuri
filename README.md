@@ -745,10 +745,7 @@ To submit a form from JavaScript using the correct Content-Type:
 ```javascript
 fetch("/api/register", {
   method: "POST",
-  headers: {
-    "Content-Type": "application/x-www-form-urlencoded",
-    "X-Sucuri-Token": window.__sucuri_token || ""
-  },
+  headers: { "Content-Type": "application/x-www-form-urlencoded" },
   body: new URLSearchParams(new FormData(formElement)).toString()
 });
 ```
@@ -796,26 +793,26 @@ Path traversal outside `static/` is blocked with a `403`.
 
 ---
 
-### CSRF Token Protection
+### CSRF Protection
 
-By default, every non-GET request must include an `X-Sucuri-Token` header with the current token. The token rotates after each successful authenticated request and is broadcast to all connected SSE clients immediately.
+By default, every non-GET request is protected by a CSRF token stored in an `HttpOnly; SameSite=Strict` cookie named `__sucuri_csrf`.
+
+- **`HttpOnly`** — JavaScript on the page can never read the token, even under an XSS attack.
+- **`SameSite=Strict`** — the browser never sends the cookie on cross-origin requests, blocking CSRF from other domains.
+- The token is set automatically when the server serves any HTML page. The browser sends the cookie on same-origin `fetch` and `<form>` requests without any JavaScript involvement.
+
+**No token management is needed in your JavaScript.** Just make `fetch` calls normally:
 
 ```javascript
-// The current token is always available in the browser as:
-window.__sucuri_token
-
-// Usage in fetch calls:
+// No X-Sucuri-Token header needed — the browser handles the cookie automatically
 fetch("/api/update", {
   method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "X-Sucuri-Token": window.__sucuri_token || ""
-  },
+  headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ price: "19.99" })
 });
 ```
 
-To disable protection (e.g. for fully public APIs or during development):
+To disable protection (e.g. for fully public APIs):
 
 ```bash
 sucuri serve app.py --public

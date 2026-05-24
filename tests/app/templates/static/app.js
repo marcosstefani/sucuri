@@ -5,7 +5,7 @@ function updatePrice() {
 
   fetch('/api/product/price', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Sucuri-Token': window.__sucuri_token || '' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: name, price: price.toFixed(2) })
   });
 }
@@ -17,7 +17,7 @@ function addProduct() {
 
   fetch('/api/product/add', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Sucuri-Token': window.__sucuri_token || '' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: name, price: price.toFixed(2) })
   });
 
@@ -41,7 +41,7 @@ function updateByIndex() {
   if (isNaN(price)) return;
   fetch('/api/product/' + index + '/price', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Sucuri-Token': window.__sucuri_token || '' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ price: price.toFixed(2) })
   });
 }
@@ -53,17 +53,14 @@ function replaceProduct() {
   if (!name || isNaN(price)) return;
   fetch('/api/product/' + index, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', 'X-Sucuri-Token': window.__sucuri_token || '' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: name, price: price.toFixed(2) })
   });
 }
 
 function deleteProduct() {
   var index = document.getElementById('delIndex').value;
-  fetch('/api/product/' + index, {
-    method: 'DELETE',
-    headers: { 'X-Sucuri-Token': window.__sucuri_token || '' }
-  });
+  fetch('/api/product/' + index, { method: 'DELETE' });
 }
 
 function triggerError() {
@@ -80,7 +77,7 @@ function addValidated() {
   var price = parseFloat(document.getElementById('valPrice').value) || 0;
   fetch('/api/product/add-validated', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Sucuri-Token': window.__sucuri_token || '' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: name, price: price.toFixed(2) })
   })
   .then(function(r) {
@@ -112,10 +109,7 @@ function submitProductForm(e) {
   var body = new URLSearchParams(new FormData(e.target));
   fetch('/api/product/add-form', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'X-Sucuri-Token': window.__sucuri_token || ''
-    },
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: body.toString()
   })
   .then(function(r) { return r.json(); })
