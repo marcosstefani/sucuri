@@ -5,6 +5,7 @@ import queue
 import re
 import secrets
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 from urllib.parse import urlparse, parse_qs
@@ -31,6 +32,42 @@ def _compile_route(path):
 # Default favicon: the Sucuri logo bundled with the package.
 _FAVICON_PATH = os.path.join(os.path.dirname(__file__), "assets", "favicon.png")
 
+_WATCH_EXTENSIONS = {".suc", ".css", ".js", ".html"}
+
+
+def _watch_files(template_dir, on_change, stop_event, interval=0.4):
+    """Poll template_dir for file mtime changes; call on_change() when anything changes."""
+    mtimes = {}
+    # Initial scan — populate without triggering
+    for root, _, files in os.walk(template_dir):
+        for fname in files:
+            if os.path.splitext(fname)[1] in _WATCH_EXTENSIONS:
+                path = os.path.join(root, fname)
+                try:
+                    mtimes[path] = os.path.getmtime(path)
+                except OSError:
+                    pass
+    while not stop_event.is_set():
+        time.sleep(interval)
+        changed = False
+        for root, _, files in os.walk(template_dir):
+            for fname in files:
+                if os.path.splitext(fname)[1] not in _WATCH_EXTENSIONS:
+                    continue
+                path = os.path.join(root, fname)
+                try:
+                    mtime = os.path.getmtime(path)
+                except OSError:
+                    continue
+                if path not in mtimes:
+                    mtimes[path] = mtime
+                    changed = True
+                elif mtimes[path] != mtime:
+                    mtimes[path] = mtime
+                    changed = True
+        if changed:
+            on_change()
+
 
 # ---------------------------------------------------------------------------
 # JS snippet injected into every rendered page.
@@ -51,6 +88,9 @@ def _make_sse_script(token=None):
   }};
   es.addEventListener('token', function (e) {{
     window.__sucuri_token = e.data;
+  }});
+  es.addEventListener('reload', function () {{
+    window.location.reload();
   }});
 }}());
 </script>"""
@@ -434,10 +474,17 @@ class SucuriApp:
             print( "  Protected  → token rotates after each request. Use --public to disable.")
         else:
             print( "  Public mode → non-GET endpoints have no token protection.")
+        stop_event = threading.Event()
+        threading.Thread(
+            target=_watch_files,
+            args=(self.template_dir, self._broadcast_reload, stop_event),
+            daemon=True,
+        ).start()
         try:
             server.serve_forever()
         except KeyboardInterrupt:
             print("\nServer stopped.")
+            stop_event.set()
             server.shutdown()
 
     # ------------------------------------------------------------------
@@ -450,6 +497,19 @@ class SucuriApp:
         html_fragment = self._render_partial(key)
         if html_fragment is not None:
             self._broadcast(key, html_fragment)
+
+    def _broadcast_reload(self):
+        """Tell all connected browsers to reload the page (triggered by file changes)."""
+        msg = b"event: reload\ndata: 1\n\n"
+        with self._sse_lock:
+            dead = []
+            for q in self._sse_clients:
+                try:
+                    q.put_nowait(msg)
+                except queue.Full:
+                    dead.append(q)
+            for q in dead:
+                self._sse_clients.remove(q)
 
     def _render_partial(self, watch_key):
         """Re-render the full template and extract only the changed watch block."""
