@@ -5,7 +5,9 @@ from sucuri.parser import parse_sucuri
 
 class SucuriCompiler:
     def __init__(self, context=None, base_dir=".", filters=None):
-        self.context = context or {}
+        # Shallow copy to prevent the compiler from mutating the caller's dict
+        # (e.g. loop variables would otherwise leak into state.data)
+        self.context = dict(context) if context else {}
         self.base_dir = base_dir
         self.filters = filters or {}
         self.indent_level = 0
@@ -615,6 +617,28 @@ class SucuriCompiler:
         for child in node.children:
             if isinstance(child, Token) and child.type == "PATH":
                 self.extends_path = child.value
+
+    def visit_watch_stmt(self, node):
+        watch_name = ""
+        block_node = None
+        for child in node.children:
+            if isinstance(child, Token) and child.type == "WATCH_NAME":
+                watch_name = child.value
+            elif isinstance(child, Tree) and child.data == "block":
+                block_node = child
+
+        if not watch_name:
+            return
+
+        indent = self._get_indent()
+        self.output.append(f'<!--[suc:{watch_name}:start]-->')
+        self.output.append(f'{indent}<div data-suc-watch="{watch_name}">')
+        if block_node:
+            self.indent_level += 1
+            self._visit(block_node)
+            self.indent_level -= 1
+        self.output.append(f'{indent}</div>')
+        self.output.append(f'<!--[suc:{watch_name}:end]-->')
 
     def visit_define_block_stmt(self, node):
         block_name = ""

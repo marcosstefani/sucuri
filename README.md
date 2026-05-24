@@ -523,3 +523,314 @@ env_a.register_filter('shout', lambda v: v.upper() + "!")
 # env_b has no 'shout' filter — fully isolated
 ```
 
+---
+
+## 🌐 Built-in Live Server
+
+Sucuri ships with a zero-dependency reactive HTTP server. It watches your app's state and pushes HTML updates to every connected browser in real time — no page reload needed.
+
+### Starting the server
+
+```bash
+# Basic usage
+sucuri serve app.py
+
+# Custom host / port
+sucuri serve app.py --host 0.0.0.0 --port 3000
+
+# Disable CSRF token protection (see Security below)
+sucuri serve app.py --public
+```
+
+---
+
+### SucuriApp
+
+```python
+from sucuri.server import SucuriApp
+
+app = SucuriApp(template_dir="templates")   # template_dir defaults to "."
+```
+
+---
+
+### Reactive State & Live Reload
+
+`app.state()` creates a reactive dictionary. When any top-level key changes, all browsers connected via SSE receive the updated HTML fragment instantly — without a full page reload.
+
+```python
+state = app.state({
+    "products": [
+        {"name": "Widget A", "price": "9.99"},
+    ],
+    "cart": {"count": 0, "total": "0.00"},
+})
+```
+
+In your template, wrap reactive sections in `watch` blocks using the state key as the identifier:
+
+```pug
+html
+  body
+    watch products
+      <for p in products>
+      div.card
+        span.name {p.name}
+        span.price $ {p.price}
+      <endfor>
+
+    watch cart
+      p Items: {cart.count} — Total: $ {cart.total}
+```
+
+Each `watch` block renders as a `<div data-suc-watch="key">` wrapper. When the server detects a change to that key, only that wrapper is replaced in the DOM.
+
+**Triggering a re-render from a route handler:**
+
+```python
+# Direct assignment to a top-level key triggers automatically
+state.data["products"].append({"name": "New", "price": "1.00"})
+state.notify("products")   # manual notify for nested mutations
+```
+
+---
+
+### Routes
+
+#### GET
+
+```python
+@app.get("/")
+def index():
+    return app.render("shop.suc", state.data)   # template → HTML string
+
+@app.get("/ping")
+def ping():
+    return {"status": "ok"}   # dict → JSON response
+```
+
+#### POST / PUT / DELETE
+
+Mutation handlers receive a `request` object as their first positional argument:
+
+```python
+@app.post("/api/price")
+def update_price(request):
+    new_price = request.json.get("price")
+    state.data["products"][0]["price"] = new_price
+    state.notify("products")
+    return {"ok": True}
+
+@app.put("/api/item")
+def replace_item(request):
+    ...
+
+@app.delete("/api/item")
+def remove_item(request):
+    ...
+```
+
+#### Dynamic routes
+
+Use `<param>` placeholders in the path. GET handlers receive params as keyword arguments; mutation handlers receive them after `request`:
+
+```python
+@app.get("/api/product/<index>")
+def get_product(index):
+    return state.data["products"][int(index)]
+
+@app.post("/api/product/<index>/price")
+def update_price_by_index(request, index):
+    state.data["products"][int(index)]["price"] = request.json["price"]
+    state.notify("products")
+    return {"ok": True}
+
+@app.delete("/api/product/<index>")
+def delete_product(request, index):
+    state.data["products"].pop(int(index))
+    state.notify("products")
+    return {"ok": True}
+```
+
+---
+
+### Response Helpers
+
+By default, routes return `str` (HTML 200) or `dict` (JSON 200). For any other status code, redirect, or raw bytes, import the helpers from `sucuri.server`:
+
+```python
+from sucuri.server import SucuriApp, Response, redirect
+```
+
+#### `Response(body, status=200, content_type=None)`
+
+Wraps any return value with a custom HTTP status code or content type.
+
+```python
+@app.post("/api/login")
+def login(request):
+    if not valid_credentials(request.json):
+        return Response({"error": "unauthorized"}, status=401)
+    return {"ok": True}
+
+@app.get("/api/item/<id>")
+def get_item(id):
+    item = find(id)
+    if item is None:
+        return Response("<h1>Not found</h1>", status=404)
+    return item
+
+@app.get("/report")
+def report():
+    pdf_bytes = generate_pdf()
+    return Response(pdf_bytes, status=200, content_type="application/pdf")
+```
+
+| Argument | Type | Default | Description |
+|----------|------|---------|-------------|
+| `body` | `str`, `dict`, or `bytes` | — | Response body |
+| `status` | `int` | `200` | HTTP status code |
+| `content_type` | `str \| None` | `None` | Forces a specific Content-Type; auto-detected when `None` |
+
+#### `redirect(url, status=302)`
+
+Returns an HTTP redirect. Works from any GET or mutation handler.
+
+```python
+@app.get("/old-path")
+def old_path():
+    return redirect("/new-path")          # 302 Found
+
+@app.get("/permanent")
+def permanent():
+    return redirect("/new-path", status=301)  # 301 Moved Permanently
+
+@app.post("/api/login")
+def login(request):
+    # authenticate…
+    return redirect("/dashboard")
+```
+
+---
+
+### Request Object
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `request.body` | `bytes` | Raw request body |
+| `request.json` | `dict` | Parsed JSON body (`{}` on failure) |
+| `request.form` | `dict` | Parsed form data (see below) |
+
+#### `request.form`
+
+Populated for `application/x-www-form-urlencoded` and `multipart/form-data` requests.
+
+| Scenario | Value type |
+|----------|-----------|
+| Single-value field | `str` |
+| Repeated field name | `list[str]` |
+| File upload field (`filename=`) | `bytes` |
+
+```python
+@app.post("/api/register")
+def register(request):
+    name  = request.form["name"]        # str
+    tags  = request.form.get("tags")    # list[str] if sent multiple times
+    photo = request.form.get("photo")   # bytes if it's a file field
+    ...
+```
+
+To submit a form from JavaScript using the correct Content-Type:
+
+```javascript
+fetch("/api/register", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/x-www-form-urlencoded",
+    "X-Sucuri-Token": window.__sucuri_token || ""
+  },
+  body: new URLSearchParams(new FormData(formElement)).toString()
+});
+```
+
+---
+
+### Custom Error Handlers
+
+Register handlers for any HTTP error code with `@app.error(code)`. The handler for `500` receives the exception as its first argument; all other codes are called with no arguments.
+
+```python
+@app.error(404)
+def not_found():
+    return """
+    <html><body>
+      <h1>404 — Not found</h1>
+      <a href="/">Go back</a>
+    </body></html>
+    """
+
+@app.error(500)
+def server_error(exc):
+    return {"error": str(exc), "type": type(exc).__name__}
+```
+
+Handlers follow the same return convention as routes: a `str` is sent as `text/html`, a `dict` as `application/json`, both with the appropriate error status code.
+
+---
+
+### Static Files
+
+Any file placed inside `template_dir/static/` is served automatically at `/static/<path>`.
+
+```
+templates/
+  static/
+    css/
+      style.css    →  GET /static/css/style.css
+    js/
+      app.js       →  GET /static/js/app.js
+    logo.png       →  GET /static/logo.png
+```
+
+Path traversal outside `static/` is blocked with a `403`.
+
+---
+
+### CSRF Token Protection
+
+By default, every non-GET request must include an `X-Sucuri-Token` header with the current token. The token rotates after each successful authenticated request and is broadcast to all connected SSE clients immediately.
+
+```javascript
+// The current token is always available in the browser as:
+window.__sucuri_token
+
+// Usage in fetch calls:
+fetch("/api/update", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "X-Sucuri-Token": window.__sucuri_token || ""
+  },
+  body: JSON.stringify({ price: "19.99" })
+});
+```
+
+To disable protection (e.g. for fully public APIs or during development):
+
+```bash
+sucuri serve app.py --public
+# or
+SUCURI_PUBLIC=1 sucuri serve app.py
+```
+
+> **Warning:** Never use `--public` in production if your endpoints mutate state.
+
+---
+
+### Default Favicon
+
+When your app does not provide a favicon, the server automatically serves the Sucuri logo at `/favicon.ico`. To override it, place your own file in `template_dir/static/` with any of these names (checked in order):
+
+- `static/favicon.ico`
+- `static/favicon.svg`
+- `static/favicon.png`

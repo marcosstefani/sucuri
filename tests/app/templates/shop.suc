@@ -1,0 +1,112 @@
+html
+  head
+    title {title}
+    style static/style.css
+  body
+    div.header
+      h1 {title}
+      p.subtitle Reactive demo with Sucuri
+
+    div.layout
+      div.sidebar
+        h2 Update price
+        div.form
+          label Product:
+          input(type="text" id="name" value="Widget A")
+          label New price:
+          input(type="number" id="price" value="0" step="0.01")
+          button(onclick="updatePrice()") Apply
+
+        div.form
+          label Add product:
+          input(type="text" id="newName" placeholder="Product name")
+          input(type="number" id="newPrice" placeholder="Price" step="0.01")
+          button(onclick="addProduct()") Add
+
+        h2 Dynamic routes
+
+        div.form
+          label GET /api/product/&lt;index&gt;
+          input(type="number" id="getIndex" value="0" min="0")
+          button(onclick="getProduct()") Fetch
+          pre(id="getResult" class="result") —
+
+        div.form
+          label POST /api/product/&lt;index&gt;/price
+          input(type="number" id="putIndex" value="0" min="0")
+          input(type="number" id="putPrice" placeholder="New price" step="0.01")
+          button(onclick="updateByIndex()") Update
+
+        div.form
+          label PUT /api/product/&lt;index&gt; (replace)
+          input(type="number" id="repIndex" value="0" min="0")
+          input(type="text" id="repName" placeholder="New name")
+          input(type="number" id="repPrice" placeholder="New price" step="0.01")
+          button(onclick="replaceProduct()") Replace
+
+        div.form
+          label DELETE /api/product/&lt;index&gt;
+          input(type="number" id="delIndex" value="0" min="0")
+          button(onclick="deleteProduct()") Delete
+
+        h2 Form data
+
+        div.form
+          label Cadastrar produto via HTML form:
+          button(onclick="openModal()") Cadastrar produto
+
+        h2 Response helpers
+
+        div.form
+          label redirect() — GET /demo/redirect:
+          a(href="/demo/redirect") Redirect to /
+
+        div.form
+          label Response(body, status=201 or 422):
+          input(type="text" id="valName" placeholder="Nome (vazio = 422)")
+          input(type="number" id="valPrice" placeholder="Preço" step="0.01" value="0.00")
+          button(onclick="addValidated()") POST validado
+          pre(id="validatedResult" class="result") —
+
+        h2 Error handlers
+
+        div.form
+          label Navigate to trigger a 404:
+          a(href="/this-does-not-exist" target="_blank") Open /this-does-not-exist
+
+        div.form
+          label Trigger a 500 via GET:
+          button(onclick="triggerError()") Trigger 500
+          pre(id="errorResult" class="result") —
+
+      div.main
+        watch products
+          <for p in products>
+          div.card
+            span.name {p.name}
+            span.price $ {p.price}
+          <endfor>
+
+        watch cart
+          div.cart-summary
+            h3 Cart
+            p Items: {cart.count}
+            p Total: $ {cart.total}
+
+    div.modal-overlay(id="modalOverlay" onclick="overlayClick(event)")
+      div.modal
+        div.modal-header
+          h3 Cadastrar produto
+          button.modal-close(type="button" onclick="closeModal()") ×
+        form.modal-form(id="productForm" onsubmit="submitProductForm(event)")
+          div.field
+            label Nome
+            input(type="text" name="name" id="modalName" placeholder="Nome do produto" autocomplete="off")
+          div.field
+            label Preço
+            input(type="number" name="price" id="modalPrice" placeholder="0.00" step="0.01" min="0" value="0.00")
+          div.modal-footer
+            button.btn-secondary(type="button" onclick="closeModal()") Cancelar
+            button(type="submit") Cadastrar
+
+    script static/app.js

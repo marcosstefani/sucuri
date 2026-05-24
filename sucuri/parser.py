@@ -13,6 +13,9 @@ block_stmt: if_stmt
           | for_stmt
           | tag_stmt
           | define_block_stmt
+          | watch_stmt
+
+watch_stmt: "watch" WS_INLINE WATCH_NAME _NL _INDENT block _DEDENT
 
 stmt: include_stmt
     | style_stmt
@@ -44,6 +47,7 @@ text_inline: "|" WS_INLINE? TEXT
 TAG_NAME: /[a-zA-Z0-9\-]+/
 CSS_TAG: /([a-zA-Z0-9\-]+)?(#[a-zA-Z0-9\-]+|\.[a-zA-Z0-9\-]+)+/
 BLOCK_NAME: /[a-zA-Z0-9_]+/
+WATCH_NAME: /[a-zA-Z0-9_]+/
 ATTR_NAME: /[a-zA-Z0-9\-\._]+/
 ATTR_VALUE: /"[^"]*"/ | /'[^']*'/
 PATH: /[a-zA-Z0-9\/\.\-_]+/
