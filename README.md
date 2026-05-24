@@ -866,3 +866,70 @@ When your app does not provide a favicon, the server automatically serves the Su
 - `static/favicon.ico`
 - `static/favicon.svg`
 - `static/favicon.png`
+
+---
+
+## 🐳 Docker
+
+A pre-built Docker image is available on Docker Hub, so you can containerise any Sucuri app without installing Python locally.
+
+> Replace `latest` with any published version tag if you need a pinned release — e.g. `marcosstefani/sucuri:1.2.3`.
+
+### Using the image as a base
+
+Create a `Dockerfile` in your project root:
+
+```dockerfile
+FROM marcosstefani/sucuri:latest
+
+# Copy your app files into the container
+COPY . .
+
+# Default port is 8080 — expose it
+EXPOSE 8080
+```
+
+Your project structure should look like this:
+
+```
+my-app/
+  Dockerfile
+  app.py            ← SucuriApp entry point
+  templates/
+    index.suc
+    static/
+      style.css
+```
+
+Then build and run:
+
+```bash
+docker build -t my-sucuri-app .
+docker run -p 8080:8080 my-sucuri-app
+```
+
+Your app is now available at `http://localhost:8080`.
+
+### Overriding the entry point
+
+The default `CMD` runs `sucuri serve app.py --host 0.0.0.0`. If your entry file has a different name, override it in your `Dockerfile`:
+
+```dockerfile
+FROM marcosstefani/sucuri:latest
+
+COPY . .
+
+CMD ["sucuri", "serve", "main.py", "--host", "0.0.0.0"]
+```
+
+### Using Docker Compose
+
+```yaml
+services:
+  web:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./templates:/app/templates   # live-reload template edits without rebuilding
+```
