@@ -442,25 +442,61 @@ class SucuriCompiler:
                     for w in words[1:]:
                         r += f'["{w}"]'
                     return r
-                result.append(re.sub(r'[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)+', replace_dot, part))
+                part = re.sub(r'[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)+', replace_dot, part)
+                # Normalize JSON-style literals to Python equivalents
+                part = re.sub(r'\btrue\b', 'True', part)
+                part = re.sub(r'\bfalse\b', 'False', part)
+                part = re.sub(r'\bnull\b', 'None', part)
+                result.append(part)
         return ''.join(result)
 
     def visit_if_stmt(self, node):
         condition = ""
-        block_node = None
+        if_block = None
+        elif_clauses = []
+        else_clause = None
+
         for child in node.children:
             if isinstance(child, Token) and child.type == "CONDITION":
                 condition = child.value.strip()
             elif isinstance(child, Tree) and child.data == "block":
-                block_node = child
+                if_block = child
+            elif isinstance(child, Tree) and child.data == "elif_clause":
+                elif_clauses.append(child)
+            elif isinstance(child, Tree) and child.data == "else_clause":
+                else_clause = child
 
         try:
             is_true = eval(self._prepare_condition(condition), {}, self.context)
         except Exception:
             is_true = False
 
-        if is_true and block_node:
-            self._visit(block_node)
+        if is_true:
+            if if_block:
+                self._visit(if_block)
+            return
+
+        for elif_node in elif_clauses:
+            elif_condition = ""
+            elif_block = None
+            for child in elif_node.children:
+                if isinstance(child, Token) and child.type == "CONDITION":
+                    elif_condition = child.value.strip()
+                elif isinstance(child, Tree) and child.data == "block":
+                    elif_block = child
+            try:
+                elif_true = eval(self._prepare_condition(elif_condition), {}, self.context)
+            except Exception:
+                elif_true = False
+            if elif_true:
+                if elif_block:
+                    self._visit(elif_block)
+                return
+
+        if else_clause:
+            for child in else_clause.children:
+                if isinstance(child, Tree) and child.data == "block":
+                    self._visit(child)
 
     def visit_for_stmt(self, node):
         expr = ""

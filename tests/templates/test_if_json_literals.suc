@@ -1,0 +1,19 @@
+div
+    <if active == true>
+    p is-active
+    <endif>
+    <if active == false>
+    p is-inactive
+    <endif>
+    <if premium == true>
+    p is-premium
+    <endif>
+    <if premium == false>
+    p is-free
+    <endif>
+    <if data == null>
+    p no-data
+    <endif>
+    <if data != null>
+    p has-data
+    <endif>

@@ -33,8 +33,14 @@ script_stmt: "script" WS_INLINE PATH
 macro_stmt: "+" PATH [macro_attrs] [WS_INLINE TEXT]
 macro_attrs: "(" attributes ")"
 
-if_stmt: "<if" WS_INLINE CONDITION ">" _NL _INDENT block _DEDENT "<endif>" _NL
-       | "<if" WS_INLINE CONDITION ">" _NL block "<endif>" _NL
+if_stmt: "<if" WS_INLINE CONDITION ">" _NL _INDENT block _DEDENT elif_clause* else_clause? "<endif>" _NL
+       | "<if" WS_INLINE CONDITION ">" _NL block elif_clause* else_clause? "<endif>" _NL
+
+elif_clause: "<elif" WS_INLINE CONDITION ">" _NL _INDENT block _DEDENT
+           | "<elif" WS_INLINE CONDITION ">" _NL block
+
+else_clause: "<else>" _NL _INDENT block _DEDENT
+           | "<else>" _NL block
 for_stmt: "<for" WS_INLINE FOR_EXPR ">" _NL _INDENT block _DEDENT "<endfor>" _NL
         | "<for" WS_INLINE FOR_EXPR ">" _NL block "<endfor>" _NL
 
