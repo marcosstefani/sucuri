@@ -50,7 +50,7 @@ jobs:
       #   marcosstefani/sucuri:1.2.3   ← pinned version
       #   marcosstefani/sucuri:latest  ← always points to the newest release
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
