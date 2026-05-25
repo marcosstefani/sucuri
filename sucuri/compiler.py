@@ -427,6 +427,24 @@ class SucuriCompiler:
         text = node.children[0].value
         self.output.append(f"{indent}{self._render_text(text)}")
 
+    def _prepare_condition(self, condition):
+        """Convert dot-notation dict access (e.g. user.role) to bracket notation for eval."""
+        # Split on string literals so we don't modify quoted values
+        parts = re.split(r'("(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\')', condition)
+        result = []
+        for i, part in enumerate(parts):
+            if i % 2 == 1:
+                result.append(part)
+            else:
+                def replace_dot(m):
+                    words = m.group(0).split('.')
+                    r = words[0]
+                    for w in words[1:]:
+                        r += f'["{w}"]'
+                    return r
+                result.append(re.sub(r'[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)+', replace_dot, part))
+        return ''.join(result)
+
     def visit_if_stmt(self, node):
         condition = ""
         block_node = None
@@ -437,8 +455,8 @@ class SucuriCompiler:
                 block_node = child
 
         try:
-            is_true = eval(condition, {}, self.context)
-        except Exception as e:
+            is_true = eval(self._prepare_condition(condition), {}, self.context)
+        except Exception:
             is_true = False
 
         if is_true and block_node:
@@ -494,21 +512,25 @@ class SucuriCompiler:
             if isinstance(child, Token):
                 if child.type == "PATH":
                     macro_name = child.value
-            elif isinstance(child, Tree) and getattr(child, "data", None) == "attributes":
-                for attr_node in child.children:
-                    if attr_node is None or not isinstance(attr_node, Tree):
+            elif isinstance(child, Tree) and getattr(child, "data", None) == "macro_attrs":
+                # macro_attrs wraps attributes: macro_attrs -> attributes -> attr*
+                for attrs_node in child.children:
+                    if not isinstance(attrs_node, Tree) or getattr(attrs_node, "data", None) != "attributes":
                         continue
-                    name = ""
-                    val = None
-                    for grant in attr_node.children:
-                        if grant is None:
+                    for attr_node in attrs_node.children:
+                        if attr_node is None or not isinstance(attr_node, Tree):
                             continue
-                        if grant.type == "ATTR_NAME":
-                            name = grant.value
-                        elif grant.type == "ATTR_VALUE":
-                            val = grant.value.strip("\"'")
-                    if name:
-                        attr_dict[name] = val
+                        name = ""
+                        val = None
+                        for grant in attr_node.children:
+                            if grant is None:
+                                continue
+                            if grant.type == "ATTR_NAME":
+                                name = grant.value
+                            elif grant.type == "ATTR_VALUE":
+                                val = grant.value.strip("\"'")
+                        if name:
+                            attr_dict[name] = val
                 
         if macro_name in self.macros:
             # Inject parameters into context

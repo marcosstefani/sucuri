@@ -51,7 +51,7 @@ WATCH_NAME: /[a-zA-Z0-9_]+/
 ATTR_NAME: /[a-zA-Z0-9\-\._]+/
 ATTR_VALUE: /"[^"]*"/ | /'[^']*'/
 PATH: /[a-zA-Z0-9\/\.\-_]+/
-CONDITION: /[^>]+/
+CONDITION: /[^>\n]+(?:>[^>\n]+)*/
 FOR_EXPR: /[^>]+/
 TEXT: /[^\n]+/
 WS_INLINE: /[ \t]+/

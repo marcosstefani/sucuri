@@ -1,0 +1,20 @@
+html
+    body
+        <if role == "admin">
+        p admin-access
+        <endif>
+        <if role != "admin">
+        p restricted-access
+        <endif>
+        <if active == True>
+        p is-active
+        <endif>
+        <if active != True>
+        p is-inactive
+        <endif>
+        <if user.verified == True>
+        p is-verified
+        <endif>
+        <if user.score >= 100>
+        p high-score
+        <endif>

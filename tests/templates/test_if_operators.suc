@@ -1,0 +1,20 @@
+html
+    body
+        <if n > 5>
+        p greater
+        <endif>
+        <if n < 5>
+        p less
+        <endif>
+        <if n >= 5>
+        p greater-or-equal
+        <endif>
+        <if n <= 5>
+        p less-or-equal
+        <endif>
+        <if n == 5>
+        p equal
+        <endif>
+        <if n != 5>
+        p not-equal
+        <endif>
