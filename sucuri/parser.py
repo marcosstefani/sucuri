@@ -33,8 +33,10 @@ script_stmt: "script" WS_INLINE PATH
 macro_stmt: "+" PATH [macro_attrs] [WS_INLINE TEXT]
 macro_attrs: "(" attributes ")"
 
-if_stmt: "<if" WS_INLINE CONDITION ">" _NL block "<endif>" _NL
-for_stmt: "<for" WS_INLINE FOR_EXPR ">" _NL block "<endfor>" _NL
+if_stmt: "<if" WS_INLINE CONDITION ">" _NL _INDENT block _DEDENT "<endif>" _NL
+       | "<if" WS_INLINE CONDITION ">" _NL block "<endif>" _NL
+for_stmt: "<for" WS_INLINE FOR_EXPR ">" _NL _INDENT block _DEDENT "<endfor>" _NL
+        | "<for" WS_INLINE FOR_EXPR ">" _NL block "<endfor>" _NL
 
 tag_stmt: tag_def ["(" attributes ")"] [WS_INLINE TEXT] _NL [_INDENT block _DEDENT]
 tag_def: TAG_NAME | CSS_TAG
