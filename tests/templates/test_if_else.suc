@@ -1,0 +1,9 @@
+html
+    body
+        <if role == "admin">
+        p admin-access
+        <elif role == "editor">
+        p editor-access
+        <else>
+        p guest-access
+        <endif>

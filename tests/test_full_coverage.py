@@ -129,6 +129,81 @@ class TestIfAdvanced:
 
 
 # ---------------------------------------------------------------------------
+# <if> / <elif> / <else>
+# ---------------------------------------------------------------------------
+
+class TestIfElseElif:
+    def test_if_branch_taken(self):
+        html = template(get_file("test_if_else.suc"), {"role": "admin"})
+        assert "admin-access" in html
+        assert "editor-access" not in html
+        assert "guest-access" not in html
+
+    def test_elif_branch_taken(self):
+        html = template(get_file("test_if_else.suc"), {"role": "editor"})
+        assert "editor-access" in html
+        assert "admin-access" not in html
+        assert "guest-access" not in html
+
+    def test_else_branch_taken(self):
+        html = template(get_file("test_if_else.suc"), {"role": "guest"})
+        assert "guest-access" in html
+        assert "admin-access" not in html
+        assert "editor-access" not in html
+
+    def test_only_one_branch_rendered(self):
+        """Exactly one branch must be rendered, never multiple."""
+        for role, expected, absent in [
+            ("admin",  "admin-access",  ["editor-access", "guest-access"]),
+            ("editor", "editor-access", ["admin-access",  "guest-access"]),
+            ("guest",  "guest-access",  ["admin-access",  "editor-access"]),
+        ]:
+            html = template(get_file("test_if_else.suc"), {"role": role})
+            assert expected in html
+            for tag in absent:
+                assert tag not in html
+
+
+# ---------------------------------------------------------------------------
+# <if> — JSON-style literals (true / false / null)
+# ---------------------------------------------------------------------------
+
+class TestIfJsonLiterals:
+    def _render(self, **ctx):
+        return template(get_file("test_if_json_literals.suc"), ctx)
+
+    def test_true_literal_match(self):
+        html = self._render(active=True, premium=False, data=None)
+        assert "is-active" in html
+        assert "is-inactive" not in html
+
+    def test_false_literal_match(self):
+        html = self._render(active=True, premium=False, data=None)
+        assert "is-free" in html
+        assert "is-premium" not in html
+
+    def test_null_literal_match(self):
+        html = self._render(active=True, premium=False, data=None)
+        assert "no-data" in html
+        assert "has-data" not in html
+
+    def test_null_literal_not_null(self):
+        html = self._render(active=True, premium=False, data="something")
+        assert "has-data" in html
+        assert "no-data" not in html
+
+    def test_true_and_false_are_mutually_exclusive(self):
+        for active in (True, False):
+            html = self._render(active=active, premium=False, data=None)
+            if active:
+                assert "is-active" in html
+                assert "is-inactive" not in html
+            else:
+                assert "is-inactive" in html
+                assert "is-active" not in html
+
+
+# ---------------------------------------------------------------------------
 # Filters — built-in (upper, lower, title, safe, chaining)
 # ---------------------------------------------------------------------------
 
