@@ -1,0 +1,7 @@
+html
+    body
+        h1 {label | upper}
+        h2 {label | lower}
+        h3 {label | title}
+        p {raw | safe}
+        span {label | upper | lower}

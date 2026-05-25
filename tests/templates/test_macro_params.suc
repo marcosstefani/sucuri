@@ -1,0 +1,2 @@
+include inc/card
++card(title="Fixed Title" type="info")
