@@ -72,3 +72,52 @@ def serve(app_file, port, host, public):
     if public:
         os.environ['SUCURI_PUBLIC'] = '1'
     runpy.run_path(app_file, run_name='__main__')
+
+
+@cli.command()
+@click.argument('app_file', type=click.Path(exists=True))
+@click.option('--port', '-p', default=8080, type=int, help='Port to listen on (default: 8080).')
+@click.option('--host', default='127.0.0.1', help='Host to bind to (default: 127.0.0.1).')
+@click.option('--title', default='Sucuri App', help='Window title.')
+@click.option('--width', default=1024, type=int, help='Window width in pixels.')
+@click.option('--height', default=768, type=int, help='Window height in pixels.')
+def desktop(app_file, port, host, title, width, height):
+    """Open the application as a native desktop window.
+
+    Starts the Sucuri server in a background thread and opens a native
+    WebView window pointing to it. The server stops when the window closes.
+
+    Example:
+
+        sucuri desktop main.py --title "My App" --port 8080
+    """
+    try:
+        import webview
+    except ImportError:
+        click.echo(
+            "Error: pywebview is not installed.\n"
+            "Install it with: pip install sucuri[desktop]",
+            err=True,
+        )
+        sys.exit(1)
+
+    import threading
+    from sucuri.server import _wait_for_port
+
+    os.environ['SUCURI_PORT'] = str(port)
+    os.environ['SUCURI_HOST'] = host
+
+    server_thread = threading.Thread(
+        target=runpy.run_path,
+        args=(app_file,),
+        kwargs={'run_name': '__main__'},
+        daemon=True,
+    )
+    server_thread.start()
+
+    if not _wait_for_port(host, port):
+        click.echo(f"Error: server did not start on {host}:{port} within 5 seconds.", err=True)
+        sys.exit(1)
+
+    webview.create_window(title, f'http://{host}:{port}', width=width, height=height)
+    webview.start()
