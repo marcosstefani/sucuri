@@ -96,6 +96,16 @@ sucuri build index.suc --context '{"title": "My Page"}' -o index.html
 sucuri build index.suc --context context.json -o index.html
 ```
 
+### Desktop
+
+```bash
+# Open app as a native desktop window (requires sucuri[desktop])
+sucuri desktop app.py
+
+# Custom title, size and port
+sucuri desktop app.py --title "My App" --width 1280 --height 800 --port 8080
+```
+
 ---
 
 ## 📖 Syntax & Features
@@ -869,7 +879,59 @@ When your app does not provide a favicon, the server automatically serves the Su
 
 ---
 
-## 🐳 Docker
+## �️ Desktop Mode
+
+Sucuri can open your application as a **native desktop window** instead of serving it in a browser. It uses the operating system's built-in WebView (WKWebView on macOS, WebView2 on Windows, WebKitGTK on Linux) via [pywebview](https://pywebview.flowrl.com/) — no Electron or Chromium bundle needed.
+
+### Installation
+
+```bash
+pip install 'sucuri[desktop]'
+```
+
+### Usage
+
+```bash
+sucuri desktop app.py
+```
+
+The Sucuri server starts in a background thread and a native window opens pointing to it. When the window is closed, the server stops automatically.
+
+### Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--title` | `Sucuri App` | Window title bar text |
+| `--port`, `-p` | `8080` | Port the server listens on |
+| `--host` | `127.0.0.1` | Host to bind to |
+| `--width` | `1024` | Window width in pixels |
+| `--height` | `768` | Window height in pixels |
+
+### Example
+
+```bash
+sucuri desktop main.py --title "Inventory" --width 1280 --height 800
+```
+
+### Packaging as a standalone executable
+
+To distribute your app without requiring Python to be installed, use [PyInstaller](https://pyinstaller.org):
+
+```bash
+pip install pyinstaller
+pyinstaller --onefile --windowed --name my-app \
+    --add-data "templates:templates" \
+    --icon sucuri/assets/favicon.png \
+    main.py
+```
+
+The output binary in `dist/` runs your Sucuri app as a self-contained desktop application.
+
+> **Note:** `--icon` sets the dock/taskbar icon on Windows and Linux. On macOS, the icon is embedded in the `.app` bundle via `--icon` as well, but requires an `.icns` file for best results.
+
+---
+
+## �🐳 Docker
 
 A pre-built Docker image is available on Docker Hub, so you can containerise any Sucuri app without installing Python locally.
 
