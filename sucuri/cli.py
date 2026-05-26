@@ -102,7 +102,7 @@ def desktop(app_file, port, host, title, width, height):
         sys.exit(1)
 
     import threading
-    from sucuri.server import _wait_for_port
+    from sucuri.server import _wait_for_port, _FAVICON_PATH
 
     os.environ['SUCURI_PORT'] = str(port)
     os.environ['SUCURI_HOST'] = host
@@ -120,4 +120,4 @@ def desktop(app_file, port, host, title, width, height):
         sys.exit(1)
 
     webview.create_window(title, f'http://{host}:{port}', width=width, height=height)
-    webview.start()
+    webview.start(icon=_FAVICON_PATH)
