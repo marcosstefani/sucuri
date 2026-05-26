@@ -4,6 +4,7 @@ import os
 import queue
 import re
 import secrets
+import socket
 import threading
 import time
 from http.cookies import SimpleCookie
@@ -16,8 +17,19 @@ from sucuri.parser import parse_sucuri
 from sucuri.state import State
 
 
+def _wait_for_port(host, port, timeout=5.0):
+    """Block until the server is accepting connections or timeout expires."""
+    start = time.time()
+    while time.time() - start < timeout:
+        try:
+            with socket.create_connection((host, port), timeout=0.1):
+                return True
+        except OSError:
+            time.sleep(0.1)
+    return False
+
+
 def _compile_route(path):
-    """Convert '/api/<resource>/<id>' to (compiled_regex, [param_names])."""
     param_names = []
     parts = re.split(r'(<[^>]+>)', path)
     pattern = ''
