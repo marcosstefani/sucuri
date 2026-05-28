@@ -18,6 +18,14 @@ Install and update using [pip](https://pip.pypa.io/en/stable/quickstart/):
 pip install sucuri
 ```
 
+Optional desktop support (native window mode):
+
+```bash
+pip install "sucuri[desktop]"
+```
+
+If you are using zsh, keep the package spec in double quotes as shown above.
+
 ---
 
 ## 🚀 Quick Start & Integration
@@ -96,14 +104,41 @@ sucuri build index.suc --context '{"title": "My Page"}' -o index.html
 sucuri build index.suc --context context.json -o index.html
 ```
 
-### Desktop
+---
+
+## 🏃 Running Your App (Serve vs Desktop)
+
+Sucuri has two execution modes for applications:
+
+| Mode | Best for | Command |
+|---|---|---|
+| `serve` | Web/browser access, local dev, deploy on server/container | `sucuri serve app.py` |
+| `desktop` | Native desktop window (WebView) without opening a browser tab | `sucuri desktop app.py` |
+
+`desktop` runs the same Sucuri server internally and opens a native window pointed to it. So both modes share the same app/routes/templates behavior; the main difference is how users access the UI.
+
+### Quick Commands
 
 ```bash
-# Open app as a native desktop window (requires sucuri[desktop])
+# Browser/server mode
+sucuri serve app.py
+
+# Native desktop mode (requires sucuri[desktop])
 sucuri desktop app.py
 
-# Custom title, size and port
+# Common custom options
+sucuri serve app.py --host 0.0.0.0 --port 3000
 sucuri desktop app.py --title "My App" --width 1280 --height 800 --port 8080
+
+# Custom desktop icon (recommended on macOS)
+sucuri desktop app.py --icon "./assets/app.icns"
+```
+
+### Desktop dependency
+
+```bash
+# Optional extra: required only if you want desktop mode
+pip install "sucuri[desktop]"
 ```
 
 ---
@@ -149,6 +184,37 @@ h3 Hello!
     one line
 </h3>
 ```
+
+### Code Blocks (`code`)
+
+Use `code` for literal code snippets. For multi-line snippets, prefer `pre` + `code` and pipe lines (`|`).
+
+```pug
+pre
+    code
+        | class User:
+        |     def save(self):
+        |
+        |         pass
+```
+
+**Output:**
+```html
+<pre>
+    <code>
+class User:
+    def save(self):
+
+        pass
+    </code>
+</pre>
+```
+
+Behavior notes:
+- Line breaks and left indentation are preserved for multi-line `code` blocks.
+- Blank lines inside `code` blocks are preserved.
+- HTML-sensitive characters are escaped for safety (`<`, `>`, `&`, etc.).
+- Whitespace-preservation behavior above is specific to `code` blocks.
 
 ### Attributes
 HTML attributes in Sucuri must be separated by space and enclosed strictly within parentheses `()`. Unlike standard Pug, they are on a single line and separated by spaces (not commas).
@@ -535,7 +601,7 @@ env_a.register_filter('shout', lambda v: v.upper() + "!")
 
 ---
 
-## 🌐 Built-in Live Server
+## 🌐 Built-in Live Server (Serve Mode)
 
 Sucuri ships with a zero-dependency reactive HTTP server. It watches your app's state and pushes HTML updates to every connected browser in real time — no page reload needed.
 
@@ -879,15 +945,11 @@ When your app does not provide a favicon, the server automatically serves the Su
 
 ---
 
-## �️ Desktop Mode
+## 🖥️ Desktop Mode
 
-Sucuri can open your application as a **native desktop window** instead of serving it in a browser. It uses the operating system's built-in WebView (WKWebView on macOS, WebView2 on Windows, WebKitGTK on Linux) via [pywebview](https://pywebview.flowrl.com/) — no Electron or Chromium bundle needed.
+`desktop` mode is optional and requires the extra dependency `sucuri[desktop]`.
 
-### Installation
-
-```bash
-pip install 'sucuri[desktop]'
-```
+Sucuri can open your application as a **native desktop window** instead of serving it in a browser tab. It uses the operating system's built-in WebView (WKWebView on macOS, WebView2 on Windows, WebKitGTK on Linux) via [pywebview](https://pywebview.flowrl.com/) - no Electron or Chromium bundle needed.
 
 ### Usage
 
@@ -906,11 +968,25 @@ The Sucuri server starts in a background thread and a native window opens pointi
 | `--host` | `127.0.0.1` | Host to bind to |
 | `--width` | `1024` | Window width in pixels |
 | `--height` | `768` | Window height in pixels |
+| `--icon` | bundled favicon | Path to icon file (on macOS, prefer `.icns`) |
 
 ### Example
 
 ```bash
 sucuri desktop main.py --title "Inventory" --width 1280 --height 800
+```
+
+### Icon quality on macOS (Dock)
+
+On macOS, the Dock does not auto-fix icon shape from arbitrary PNG assets. If the source image is a square with a solid background, it will appear square in the Dock.
+
+For native-looking results, use:
+- an `.icns` file via `--icon`
+- transparent background
+- proper padding and rounded-corner artwork
+
+```bash
+sucuri desktop main.py --icon "./assets/app.icns"
 ```
 
 ### Packaging as a standalone executable

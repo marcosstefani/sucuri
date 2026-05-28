@@ -50,7 +50,7 @@ tag_def: TAG_NAME | CSS_TAG
 attributes: attr (WS_INLINE attr)*
 attr: ATTR_NAME ["=" ATTR_VALUE]
 
-text_inline: "|" WS_INLINE? TEXT
+text_inline: "|" WS_INLINE? TEXT?
 
 TAG_NAME: /[a-zA-Z0-9\-]+/
 CSS_TAG: /([a-zA-Z0-9\-]+)?(#[a-zA-Z0-9\-]+|\.[a-zA-Z0-9\-]+)+/
