@@ -18,6 +18,14 @@ Install and update using [pip](https://pip.pypa.io/en/stable/quickstart/):
 pip install sucuri
 ```
 
+Optional desktop support (native window mode):
+
+```bash
+pip install "sucuri[desktop]"
+```
+
+If you are using zsh, keep the package spec in double quotes as shown above.
+
 ---
 
 ## 🚀 Quick Start & Integration
@@ -121,13 +129,16 @@ sucuri desktop app.py
 # Common custom options
 sucuri serve app.py --host 0.0.0.0 --port 3000
 sucuri desktop app.py --title "My App" --width 1280 --height 800 --port 8080
+
+# Custom desktop icon (recommended on macOS)
+sucuri desktop app.py --icon "./assets/app.icns"
 ```
 
 ### Desktop dependency
 
 ```bash
-# Required only for desktop mode
-pip install 'sucuri[desktop]'
+# Optional extra: required only if you want desktop mode
+pip install "sucuri[desktop]"
 ```
 
 ---
@@ -936,6 +947,8 @@ When your app does not provide a favicon, the server automatically serves the Su
 
 ## 🖥️ Desktop Mode
 
+`desktop` mode is optional and requires the extra dependency `sucuri[desktop]`.
+
 Sucuri can open your application as a **native desktop window** instead of serving it in a browser tab. It uses the operating system's built-in WebView (WKWebView on macOS, WebView2 on Windows, WebKitGTK on Linux) via [pywebview](https://pywebview.flowrl.com/) - no Electron or Chromium bundle needed.
 
 ### Usage
@@ -955,11 +968,25 @@ The Sucuri server starts in a background thread and a native window opens pointi
 | `--host` | `127.0.0.1` | Host to bind to |
 | `--width` | `1024` | Window width in pixels |
 | `--height` | `768` | Window height in pixels |
+| `--icon` | bundled favicon | Path to icon file (on macOS, prefer `.icns`) |
 
 ### Example
 
 ```bash
 sucuri desktop main.py --title "Inventory" --width 1280 --height 800
+```
+
+### Icon quality on macOS (Dock)
+
+On macOS, the Dock does not auto-fix icon shape from arbitrary PNG assets. If the source image is a square with a solid background, it will appear square in the Dock.
+
+For native-looking results, use:
+- an `.icns` file via `--icon`
+- transparent background
+- proper padding and rounded-corner artwork
+
+```bash
+sucuri desktop main.py --icon "./assets/app.icns"
 ```
 
 ### Packaging as a standalone executable
