@@ -81,7 +81,8 @@ def serve(app_file, port, host, public):
 @click.option('--title', default='Sucuri App', help='Window title.')
 @click.option('--width', default=1024, type=int, help='Window width in pixels.')
 @click.option('--height', default=768, type=int, help='Window height in pixels.')
-def desktop(app_file, port, host, title, width, height):
+@click.option('--icon', default=None, type=click.Path(exists=True), help='Path to app icon file. On macOS, prefer .icns for best Dock rendering.')
+def desktop(app_file, port, host, title, width, height, icon):
     """Open the application as a native desktop window.
 
     Starts the Sucuri server in a background thread and opens a native
@@ -119,5 +120,12 @@ def desktop(app_file, port, host, title, width, height):
         click.echo(f"Error: server did not start on {host}:{port} within 5 seconds.", err=True)
         sys.exit(1)
 
+    desktop_icon = icon or _FAVICON_PATH
+    if sys.platform == 'darwin' and icon and not str(icon).lower().endswith('.icns'):
+        click.echo(
+            "Warning: On macOS, Dock icons render best with .icns files.",
+            err=True,
+        )
+
     webview.create_window(title, f'http://{host}:{port}', width=width, height=height)
-    webview.start(icon=_FAVICON_PATH)
+    webview.start(icon=desktop_icon)

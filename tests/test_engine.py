@@ -172,3 +172,22 @@ def test_watch_multiple_blocks_render_independently():
     assert 'data-suc-watch=' not in html
 
 
+def test_code_block_multiline_preserves_whitespace_and_blank_lines():
+    html = template(get_file("test_code_multiline.suc"), {})
+
+    expected = "class User:\n    def save(self):\n\n        pass"
+    assert expected in html
+
+
+def test_code_block_single_line_keeps_previous_behavior():
+    html = template(get_file("test_code_single_line.suc"), {})
+    assert "<code>print(\"ok\")</code>" in html
+
+
+def test_non_code_pipe_whitespace_behavior_is_unchanged():
+    html = template(get_file("test_non_code_pipe_whitespace.suc"), {})
+    assert "<p>" in html
+    assert "keep current behavior" in html
+    assert "\n       keep current behavior" not in html
+
+

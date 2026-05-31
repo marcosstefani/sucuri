@@ -143,6 +143,35 @@ class SucuriCompiler:
         text = re.sub(r'#([a-zA-Z0-9_\.\s\|]+)', repl_hash, text)
         return text.strip()
 
+    def _extract_raw_code_lines(self, block):
+        """
+        Extract literal lines from a code block made of pipe text lines.
+        Returns None when the block contains non-text statements.
+        """
+        import html
+
+        raw_lines = []
+        for child in block.children:
+            if not isinstance(child, Tree) or child.data != "stmt" or not child.children:
+                return None
+
+            stmt_child = child.children[0]
+            if not isinstance(stmt_child, Tree) or stmt_child.data != "text_inline":
+                return None
+
+            line = ""
+            if stmt_child.children:
+                line = stmt_child.children[0].value
+
+            # Keep backwards compatibility with existing pipe syntax where a
+            # single space after `|` is just a separator.
+            if line.startswith(" "):
+                line = line[1:]
+
+            raw_lines.append(html.escape(line))
+
+        return raw_lines
+
     def _visit(self, node):
         if isinstance(node, Token):
             return
@@ -405,6 +434,14 @@ class SucuriCompiler:
         
         if inline_text:
             open_tag += inline_text
+
+        if tag_name == "code" and block:
+            raw_code_lines = self._extract_raw_code_lines(block)
+            if raw_code_lines is not None:
+                self.output.append(f"{indent}{open_tag}")
+                self.output.extend(raw_code_lines)
+                self.output.append(f"{indent}</{tag_name}>")
+                return
 
         self.output.append(f"{indent}{open_tag}")
         
