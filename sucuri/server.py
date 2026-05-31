@@ -323,6 +323,42 @@ class SucuriApp:
                 except Exception as exc:
                     self._respond_error(500, exc)
 
+            # --- HEAD -------------------------------------------------
+            def do_HEAD(self):
+                """Execute the same flow as do_GET but suppress the response body."""
+                real_wfile = self.wfile
+
+                class _NoBodyWFile:
+                    """Proxy that forwards writes until end_headers() is called, then drops them."""
+                    def __init__(self):
+                        self._suppress = False
+
+                    def write(self, data):
+                        if not self._suppress:
+                            real_wfile.write(data)
+
+                    def flush(self):
+                        real_wfile.flush()
+
+                    def __getattr__(self, name):
+                        return getattr(real_wfile, name)
+
+                no_body = _NoBodyWFile()
+                self.wfile = no_body
+
+                orig_end_headers = self.end_headers
+
+                def _patched_end_headers():
+                    orig_end_headers()
+                    no_body._suppress = True  # body writes after this point are dropped
+
+                self.end_headers = _patched_end_headers
+                try:
+                    self.do_GET()
+                finally:
+                    self.wfile = real_wfile
+                    self.end_headers = orig_end_headers
+
             # --- POST / PUT / DELETE -----------------------------------
             def _handle_mutation(self, method):
                 path = urlparse(self.path).path
@@ -454,6 +490,8 @@ class SucuriApp:
                 self.send_header("Connection", "keep-alive")
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
+                if self.command == "HEAD":
+                    return
 
                 q = queue.Queue(maxsize=64)
                 with app._sse_lock:
