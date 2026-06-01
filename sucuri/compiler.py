@@ -281,7 +281,7 @@ class SucuriCompiler:
                                 val = grant.value
                         attr_list.append((name, val))
                         if val:
-                            attributes += f'{name}={val} '
+                            attributes += f'{name}={self._render_text(val)} '
                         else:
                             attributes += f'{name} '
                                 

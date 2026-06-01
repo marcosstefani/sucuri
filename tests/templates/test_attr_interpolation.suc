@@ -1,0 +1,19 @@
+html
+    body
+        a(href="{url}") Link
+        a(href="{item.url}") Nested
+        a(href="{url}" class="{cls}") Multi
+        ul
+            <for i in arr>
+            li(class="item-#i") #i
+            <endfor>
+        ul
+            <for conn in connections>
+            li(class="is-#conn.status" data-id="#conn.id") #conn.name
+            <endfor>
+        ul
+            <for conn in connections>
+            li(class="dc-tree-item is-#conn.status") #conn.name
+            <endfor>
+        span(data-msg="{xss}") safe
+        span(data-x="{missing}") x
