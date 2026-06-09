@@ -127,7 +127,17 @@ setup(
     # Similar to `install_requires` above, these must be valid existing
     # projects.
     extras_require={
-        'desktop': ['pywebview'],
+        'desktop': [
+            'pywebview',
+            # pyobjc 12.0 is yanked for Python 3.9 and can fail to build on macOS.
+            # Keep pyobjc on the 11.x line for this interpreter/platform combination.
+            'pyobjc-core<12; platform_system == "Darwin" and python_version < "3.10"',
+            'pyobjc-framework-Cocoa<12; platform_system == "Darwin" and python_version < "3.10"',
+            'pyobjc-framework-Quartz<12; platform_system == "Darwin" and python_version < "3.10"',
+            'pyobjc-framework-security<12; platform_system == "Darwin" and python_version < "3.10"',
+            'pyobjc-framework-WebKit<12; platform_system == "Darwin" and python_version < "3.10"',
+            'pyobjc-framework-UniformTypeIdentifiers<12; platform_system == "Darwin" and python_version < "3.10"',
+        ],
     },
 
     # If there are data files included in your packages that need to be
