@@ -1,7 +1,7 @@
 html
   head
     title {title}
-    style static/style.css
+    css static/style.css
   body
     div.header
       h1 {title}
@@ -109,4 +109,4 @@ html
             button.btn-secondary(type="button" onclick="closeModal()") Cancelar
             button(type="submit") Cadastrar
 
-    script static/app.js
+    js static/app.js

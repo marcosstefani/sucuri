@@ -28,8 +28,8 @@ extends_stmt: "extends" WS_INLINE PATH
 define_block_stmt: "block" WS_INLINE BLOCK_NAME _NL [_INDENT block _DEDENT]
 
 include_stmt: "include" WS_INLINE PATH
-style_stmt: "style" WS_INLINE PATH
-script_stmt: "script" WS_INLINE PATH
+style_stmt: "css" WS_INLINE PATH
+script_stmt: "js" WS_INLINE PATH
 macro_stmt: "+" PATH [macro_attrs] [WS_INLINE TEXT]
 macro_attrs: "(" attributes ")"
 

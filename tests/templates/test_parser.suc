@@ -1,5 +1,5 @@
 include inc/link
-style static/css/style
+css static/css/style
 
 html
     body
