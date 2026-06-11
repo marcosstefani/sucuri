@@ -1,6 +1,6 @@
 include inc/link
-style static/css/style
-script static/js/app
+css static/css/style
+js static/js/app
 
 html
     body

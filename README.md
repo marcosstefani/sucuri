@@ -515,16 +515,18 @@ html = template("page.suc", {"title": "My Site"})
 ---
 
 ### Injecting CSS Styles and JS Scripts
-Need global JS or CSS appended without manually crafting raw headers/footers everywhere? Merely use `style` and `script` top-level declarations, supplying their raw path! They will be automatically wrapped in `<style>` and `<script>` HTML tags and beautifully appended to the file.
+Need global JS or CSS appended without manually crafting raw headers/footers everywhere? Use `css` and `js` top-level declarations, supplying their raw path! They will be automatically wrapped in `<style>` and `<script>` HTML tags and beautifully appended to the file.
 
 ```pug
-style static/css/global.css
-script static/js/app.js
+css static/css/global.css
+js static/js/app.js
 
 html
     body
         h1 Wow!
 ```
+
+> **Note:** `style` and `script` are regular HTML tags in Sucuri. Use `css`/`js` for inline file inclusion.
 
 ---
 
