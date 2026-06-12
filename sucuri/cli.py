@@ -71,6 +71,10 @@ def serve(app_file, port, host, public):
         os.environ['SUCURI_HOST'] = host
     if public:
         os.environ['SUCURI_PUBLIC'] = '1'
+    # Ensure the script's directory is on sys.path so local modules are importable
+    script_dir = os.path.dirname(os.path.abspath(app_file))
+    if script_dir not in sys.path:
+        sys.path.insert(0, script_dir)
     runpy.run_path(app_file, run_name='__main__')
 
 
