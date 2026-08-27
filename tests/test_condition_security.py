@@ -1,8 +1,10 @@
 """Conditions must never execute template-supplied code (see sucuri/expressions.py)."""
 
+import logging
+
 import pytest
 
-from sucuri.expressions import ConditionError, evaluate_condition
+from sucuri.expressions import ConditionError, UnknownNameError, evaluate_condition
 from sucuri.rendering import Environment
 
 
@@ -47,8 +49,39 @@ class TestConditionSandbox:
             evaluate_condition("n ===", {})
 
     def test_unknown_name_raises_condition_error(self):
-        with pytest.raises(ConditionError):
+        with pytest.raises(UnknownNameError):
             evaluate_condition("missing == 1", {})
+
+
+class TestBrokenConditionsAreReported:
+    """A silently dropped block is indistinguishable from a false condition."""
+
+    def test_malformed_condition_is_logged_as_warning(self, tmp_path, caplog):
+        source = "div\n    <if n ===>\n    p never\n    <endif>\n"
+
+        with caplog.at_level(logging.WARNING, logger="sucuri"):
+            html = render(tmp_path, source, {"n": 1})
+
+        assert "never" not in html
+        assert "could not be evaluated" in caplog.text
+
+    def test_unsupported_construct_is_logged_as_warning(self, tmp_path, caplog):
+        source = "div\n    <if name.upper()>\n    p never\n    <endif>\n"
+
+        with caplog.at_level(logging.WARNING, logger="sucuri"):
+            render(tmp_path, source, {"name": "bob"})
+
+        assert "could not be evaluated" in caplog.text
+
+    def test_missing_variable_is_not_a_warning(self, tmp_path, caplog):
+        """Optional context variables are normal usage, not an authoring mistake."""
+        source = "div\n    <if missing == 1>\n    p never\n    <endif>\n"
+
+        with caplog.at_level(logging.WARNING, logger="sucuri"):
+            html = render(tmp_path, source, {})
+
+        assert "never" not in html
+        assert caplog.text == ""
 
 
 class TestSideEffectsAreBlocked:

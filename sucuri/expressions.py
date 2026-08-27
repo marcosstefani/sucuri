@@ -14,6 +14,14 @@ class ConditionError(Exception):
     """A condition is malformed, unsupported, or references an unknown name."""
 
 
+class UnknownNameError(ConditionError):
+    """A condition references a name absent from the context.
+
+    Kept separate because an optional context variable is normal usage, while the
+    other ConditionError cases indicate a mistake in the template.
+    """
+
+
 _COMPARE_OPS = {
     ast.Eq: operator.eq,
     ast.NotEq: operator.ne,
@@ -59,7 +67,7 @@ def _evaluate(node, context):
 
     if isinstance(node, ast.Name):
         if node.id not in context:
-            raise ConditionError(f"Unknown name in condition: {node.id!r}")
+            raise UnknownNameError(f"Unknown name in condition: {node.id!r}")
         return context[node.id]
 
     if isinstance(node, ast.BoolOp):

@@ -1,8 +1,11 @@
 from lark import Tree, Token
+import logging
 import re
 import os
 from sucuri.parser import parse_sucuri
-from sucuri.expressions import ConditionError, evaluate_condition
+from sucuri.expressions import ConditionError, UnknownNameError, evaluate_condition
+
+logger = logging.getLogger("sucuri")
 
 class SucuriCompiler:
     def __init__(self, context=None, base_dir=".", filters=None, watch_enabled=False):
@@ -502,6 +505,17 @@ class SucuriCompiler:
                 result.append(part)
         return ''.join(result)
 
+    def _condition_is_true(self, condition):
+        """Evaluate a condition, treating a failure as false rather than aborting."""
+        try:
+            return evaluate_condition(self._prepare_condition(condition), self.context)
+        except UnknownNameError as error:
+            logger.debug("Condition <%s> is false: %s", condition, error)
+            return False
+        except ConditionError as error:
+            logger.warning("Condition <%s> could not be evaluated: %s", condition, error)
+            return False
+
     def visit_if_stmt(self, node):
         condition = ""
         if_block = None
@@ -518,10 +532,7 @@ class SucuriCompiler:
             elif isinstance(child, Tree) and child.data == "else_clause":
                 else_clause = child
 
-        try:
-            is_true = evaluate_condition(self._prepare_condition(condition), self.context)
-        except ConditionError:
-            is_true = False
+        is_true = self._condition_is_true(condition)
 
         if is_true:
             if if_block:
@@ -536,10 +547,7 @@ class SucuriCompiler:
                     elif_condition = child.value.strip()
                 elif isinstance(child, Tree) and child.data == "block":
                     elif_block = child
-            try:
-                elif_true = evaluate_condition(self._prepare_condition(elif_condition), self.context)
-            except ConditionError:
-                elif_true = False
+            elif_true = self._condition_is_true(elif_condition)
             if elif_true:
                 if elif_block:
                     self._visit(elif_block)
