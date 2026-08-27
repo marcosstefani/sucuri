@@ -12,7 +12,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 from urllib.parse import urlparse, parse_qs
 
-from sucuri.rendering import Environment, _AST_CACHE
+from sucuri.rendering import Environment
 from sucuri.parser import parse_sucuri
 from sucuri.state import State
 
@@ -129,19 +129,6 @@ def _extract_watch_block(html, key):
     return html[start_idx + len(start_marker):end_idx].strip()
 
 
-def _invalidate_cache_if_stale(path):
-    """Remove the AST cache entry if the file has been modified since last parse."""
-    if path not in _AST_CACHE:
-        return
-    cached_mtime = getattr(_invalidate_cache_if_stale, '_mtimes', {}).get(path)
-    current_mtime = os.path.getmtime(path)
-    if cached_mtime != current_mtime:
-        del _AST_CACHE[path]
-
-if not hasattr(_invalidate_cache_if_stale, '_mtimes'):
-    _invalidate_cache_if_stale._mtimes = {}
-
-
 class SucuriApp:
     """
     Built-in reactive web server for Sucuri templates.
@@ -205,8 +192,6 @@ class SucuriApp:
             return app.render("index.suc", state.data)
         """
         path = os.path.join(self.template_dir, template_name)
-        _invalidate_cache_if_stale(path)
-        _invalidate_cache_if_stale._mtimes[path] = os.path.getmtime(path)
 
         self._current_template = path
         self._current_context  = context
@@ -560,7 +545,6 @@ class SucuriApp:
     def _render_partial(self, watch_key):
         """Re-render the full template and extract only the changed watch block."""
         path = self._current_template
-        _invalidate_cache_if_stale(path)
         # Full re-render with current (already updated) context
         full_html = self._env.template(path, self._current_context)
         return _extract_watch_block(full_html, watch_key)
