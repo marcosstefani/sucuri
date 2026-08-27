@@ -33,9 +33,11 @@ class SucuriCompiler:
 
         if self.extends_path:
             # Re-compile but from parent template
-            parent_path = os.path.join(self.base_dir, self.extends_path)
-            if not parent_path.endswith('.suc'):
-                parent_path += '.suc'
+            parent_path = self._resolve_within_base(self.extends_path, '.suc')
+            if parent_path is None or not os.path.exists(parent_path):
+                raise FileNotFoundError(
+                    f"Parent template '{self.extends_path}' not found under '{self.base_dir}'."
+                )
             with open(parent_path, 'r', encoding='utf-8') as f:
                 parent_text = f.read()
             from sucuri.parser import parse_sucuri
@@ -69,6 +71,18 @@ class SucuriCompiler:
                 html += "\n" + "\n".join(extras)
             
         return html
+
+    def _resolve_within_base(self, path, extension):
+        """Resolve a template-supplied path, refusing anything outside base_dir."""
+        if not path:
+            return None
+        if not path.endswith(extension):
+            path += extension
+        base_root = os.path.realpath(self.base_dir)
+        full_path = os.path.realpath(os.path.join(base_root, path))
+        if full_path != base_root and not full_path.startswith(base_root + os.sep):
+            return None
+        return full_path
 
     def _get_indent(self):
         return "    " * self.indent_level
@@ -562,11 +576,8 @@ class SucuriCompiler:
                 path = child.value
 
         # For includes, we assume a .suc extension if none is provided
-        if not path.endswith('.suc'):
-            path += '.suc'
-            
-        full_path = os.path.join(self.base_dir, path)
-        if os.path.exists(full_path):
+        full_path = self._resolve_within_base(path, '.suc')
+        if full_path and os.path.exists(full_path):
             with open(full_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             # Parse the include and dynamically insert its tree into the current tree
@@ -687,10 +698,8 @@ class SucuriCompiler:
                 path = child.value
         if not path: return
 
-        if not path.endswith('.css'):
-            path += '.css'
-        full_path = os.path.join(self.base_dir, path)
-        if os.path.exists(full_path):
+        full_path = self._resolve_within_base(path, '.css')
+        if full_path and os.path.exists(full_path):
             with open(full_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             self.styles.append(content)
@@ -702,10 +711,8 @@ class SucuriCompiler:
                 path = child.value
         if not path: return
 
-        if not path.endswith('.js'):
-            path += '.js'
-        full_path = os.path.join(self.base_dir, path)
-        if os.path.exists(full_path):
+        full_path = self._resolve_within_base(path, '.js')
+        if full_path and os.path.exists(full_path):
             with open(full_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             self.scripts.append(content)
