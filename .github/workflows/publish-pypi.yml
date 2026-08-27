@@ -36,7 +36,7 @@ jobs:
         run: |
           TAG="${GITHUB_REF_NAME}"
           TAG="${TAG#v}"
-          VERSION=$(python -c "import re; print(re.search(r'version=[\'\"]([^\'\"]+)[\'\"]', open('setup.py').read()).group(1))")
+          VERSION=$(python -c "import re; print(re.search(r'__version__\s*=\s*[\'\"]([^\'\"]+)[\'\"]', open('sucuri/__init__.py').read()).group(1))")
           if [ "$TAG" != "$VERSION" ]; then
             echo "Tag ($TAG) does not match project version ($VERSION)."
             exit 1
