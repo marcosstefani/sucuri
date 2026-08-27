@@ -69,10 +69,14 @@ class SucuriCompiler:
                 extras.append(f"    <script>{script}</script>")
                 
         if extras:
-            html = html.replace("</body>", "\n".join(extras) + "\n    </body>")
-            if "</body>" not in html:
-                html += "\n" + "\n".join(extras)
-            
+            extras_html = "\n".join(extras)
+            # Anchor on the last </body>: an earlier one may come from rendered content.
+            closing_body = html.rfind("</body>")
+            if closing_body == -1:
+                html += "\n" + extras_html
+            else:
+                html = html[:closing_body] + extras_html + "\n    " + html[closing_body:]
+
         return html
 
     def _resolve_within_base(self, path, extension):
