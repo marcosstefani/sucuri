@@ -2,6 +2,8 @@ from lark import Tree, Token
 import logging
 import re
 import os
+# Imported by name: compile() uses a local variable called 'html'.
+from html import escape
 from sucuri.parser import parse_sucuri
 from sucuri.expressions import ConditionError, UnknownNameError, evaluate_condition
 
@@ -53,7 +55,6 @@ class SucuriCompiler:
                 )
             with open(parent_path, 'r', encoding='utf-8') as f:
                 parent_text = f.read()
-            from sucuri.parser import parse_sucuri
             parent_tree = parse_sucuri(parent_text)
             
             # Save child blocks to inject into parent
@@ -117,7 +118,6 @@ class SucuriCompiler:
         return val
 
     def _render_text(self, text):
-        import html
         # Replace variables {var | filter} or {var.sub} with values from context
         def repl(match):
             raw = match.group(1)
@@ -142,7 +142,7 @@ class SucuriCompiler:
                     val = self.filters[f_name](val)
             
             if not is_safe:
-                return html.escape(str(val))
+                return escape(str(val))
             return str(val)
         
         # Also replace #loop_var and #loop_var.nested
@@ -168,7 +168,7 @@ class SucuriCompiler:
                     val = self.filters[f_name](val)
 
             if not is_safe:
-                return html.escape(str(val))
+                return escape(str(val))
             return str(val)
 
         text = re.sub(r'\{([a-zA-Z0-9_\.\s\|]+)\}', repl, text)
@@ -180,8 +180,6 @@ class SucuriCompiler:
         Extract literal lines from a code block made of pipe text lines.
         Returns None when the block contains non-text statements.
         """
-        import html
-
         raw_lines = []
         for child in block.children:
             if not isinstance(child, Tree) or child.data != "stmt" or not child.children:
@@ -200,7 +198,7 @@ class SucuriCompiler:
             if line.startswith(" "):
                 line = line[1:]
 
-            raw_lines.append(html.escape(line))
+            raw_lines.append(escape(line))
 
         return raw_lines
 
