@@ -1,7 +1,24 @@
 from lark import Tree, Token
+import logging
 import re
 import os
+# Imported by name: compile() uses a local variable called 'html'.
+from html import escape
 from sucuri.parser import parse_sucuri
+from sucuri.paths import resolve_within
+from sucuri.expressions import ConditionError, UnknownNameError, evaluate_condition
+
+logger = logging.getLogger("sucuri")
+
+
+def _escape_raw_text(content, tag):
+    """Stop embedded content from closing its own <style>/<script> block.
+
+    A browser ends a raw text element at the first matching end tag, even inside a
+    string literal. Escaping the slash is inert in HTML and means the same thing in
+    CSS and JS string contexts.
+    """
+    return re.sub(rf'</(?={tag}\b)', r'<\\/', content, flags=re.IGNORECASE)
 
 class SucuriCompiler:
     def __init__(self, context=None, base_dir=".", filters=None, watch_enabled=False):
@@ -32,12 +49,13 @@ class SucuriCompiler:
 
         if self.extends_path:
             # Re-compile but from parent template
-            parent_path = os.path.join(self.base_dir, self.extends_path)
-            if not parent_path.endswith('.suc'):
-                parent_path += '.suc'
+            parent_path = self._resolve_within_base(self.extends_path, '.suc')
+            if parent_path is None or not os.path.exists(parent_path):
+                raise FileNotFoundError(
+                    f"Parent template '{self.extends_path}' not found under '{self.base_dir}'."
+                )
             with open(parent_path, 'r', encoding='utf-8') as f:
                 parent_text = f.read()
-            from sucuri.parser import parse_sucuri
             parent_tree = parse_sucuri(parent_text)
             
             # Save child blocks to inject into parent
@@ -56,18 +74,26 @@ class SucuriCompiler:
         extras = []
         if self.styles:
             for style in self.styles:
-                extras.append(f"    <style>{style}</style>")
+                extras.append(f"    <style>{_escape_raw_text(style, 'style')}</style>")
         if self.scripts:
             for script in self.scripts:
                 # The README.md describes inline scripts within style tags (injected along with the final HTML, no external SRCs)
-                extras.append(f"    <script>{script}</script>")
+                extras.append(f"    <script>{_escape_raw_text(script, 'script')}</script>")
                 
         if extras:
-            html = html.replace("</body>", "\n".join(extras) + "\n    </body>")
-            if "</body>" not in html:
-                html += "\n" + "\n".join(extras)
-            
+            extras_html = "\n".join(extras)
+            # Anchor on the last </body>: an earlier one may come from rendered content.
+            closing_body = html.rfind("</body>")
+            if closing_body == -1:
+                html += "\n" + extras_html
+            else:
+                html = html[:closing_body] + extras_html + "\n    " + html[closing_body:]
+
         return html
+
+    def _resolve_within_base(self, path, extension):
+        """Resolve a template-supplied path, refusing anything outside base_dir."""
+        return resolve_within(self.base_dir, path, extension)
 
     def _get_indent(self):
         return "    " * self.indent_level
@@ -80,12 +106,14 @@ class SucuriCompiler:
         for part in parts[1:]:
             if isinstance(val, dict):
                 val = val.get(part, default)
+            elif isinstance(val, (list, tuple)) and part.isdigit():
+                index = int(part)
+                val = val[index] if index < len(val) else default
             else:
                 return default
         return val
 
     def _render_text(self, text):
-        import html
         # Replace variables {var | filter} or {var.sub} with values from context
         def repl(match):
             raw = match.group(1)
@@ -110,7 +138,7 @@ class SucuriCompiler:
                     val = self.filters[f_name](val)
             
             if not is_safe:
-                return html.escape(str(val))
+                return escape(str(val))
             return str(val)
         
         # Also replace #loop_var and #loop_var.nested
@@ -136,7 +164,7 @@ class SucuriCompiler:
                     val = self.filters[f_name](val)
 
             if not is_safe:
-                return html.escape(str(val))
+                return escape(str(val))
             return str(val)
 
         text = re.sub(r'\{([a-zA-Z0-9_\.\s\|]+)\}', repl, text)
@@ -148,8 +176,6 @@ class SucuriCompiler:
         Extract literal lines from a code block made of pipe text lines.
         Returns None when the block contains non-text statements.
         """
-        import html
-
         raw_lines = []
         for child in block.children:
             if not isinstance(child, Tree) or child.data != "stmt" or not child.children:
@@ -168,7 +194,7 @@ class SucuriCompiler:
             if line.startswith(" "):
                 line = line[1:]
 
-            raw_lines.append(html.escape(line))
+            raw_lines.append(escape(line))
 
         return raw_lines
 
@@ -487,6 +513,17 @@ class SucuriCompiler:
                 result.append(part)
         return ''.join(result)
 
+    def _condition_is_true(self, condition):
+        """Evaluate a condition, treating a failure as false rather than aborting."""
+        try:
+            return evaluate_condition(self._prepare_condition(condition), self.context)
+        except UnknownNameError as error:
+            logger.debug("Condition <%s> is false: %s", condition, error)
+            return False
+        except ConditionError as error:
+            logger.warning("Condition <%s> could not be evaluated: %s", condition, error)
+            return False
+
     def visit_if_stmt(self, node):
         condition = ""
         if_block = None
@@ -503,10 +540,7 @@ class SucuriCompiler:
             elif isinstance(child, Tree) and child.data == "else_clause":
                 else_clause = child
 
-        try:
-            is_true = eval(self._prepare_condition(condition), {}, self.context)
-        except Exception:
-            is_true = False
+        is_true = self._condition_is_true(condition)
 
         if is_true:
             if if_block:
@@ -521,10 +555,7 @@ class SucuriCompiler:
                     elif_condition = child.value.strip()
                 elif isinstance(child, Tree) and child.data == "block":
                     elif_block = child
-            try:
-                elif_true = eval(self._prepare_condition(elif_condition), {}, self.context)
-            except Exception:
-                elif_true = False
+            elif_true = self._condition_is_true(elif_condition)
             if elif_true:
                 if elif_block:
                     self._visit(elif_block)
@@ -561,11 +592,8 @@ class SucuriCompiler:
                 path = child.value
 
         # For includes, we assume a .suc extension if none is provided
-        if not path.endswith('.suc'):
-            path += '.suc'
-            
-        full_path = os.path.join(self.base_dir, path)
-        if os.path.exists(full_path):
+        full_path = self._resolve_within_base(path, '.suc')
+        if full_path and os.path.exists(full_path):
             with open(full_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             # Parse the include and dynamically insert its tree into the current tree
@@ -686,10 +714,8 @@ class SucuriCompiler:
                 path = child.value
         if not path: return
 
-        if not path.endswith('.css'):
-            path += '.css'
-        full_path = os.path.join(self.base_dir, path)
-        if os.path.exists(full_path):
+        full_path = self._resolve_within_base(path, '.css')
+        if full_path and os.path.exists(full_path):
             with open(full_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             self.styles.append(content)
@@ -701,10 +727,8 @@ class SucuriCompiler:
                 path = child.value
         if not path: return
 
-        if not path.endswith('.js'):
-            path += '.js'
-        full_path = os.path.join(self.base_dir, path)
-        if os.path.exists(full_path):
+        full_path = self._resolve_within_base(path, '.js')
+        if full_path and os.path.exists(full_path):
             with open(full_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             self.scripts.append(content)

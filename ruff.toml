@@ -1,0 +1,6 @@
+# Scoped to correctness rules (pyflakes + syntax/runtime errors) rather than style,
+# so the check stays actionable and does not block PRs on formatting opinions.
+target-version = "py311"
+
+[lint]
+select = ["F", "E9"]

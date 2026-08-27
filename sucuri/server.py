@@ -12,8 +12,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 from urllib.parse import urlparse, parse_qs
 
-from sucuri.rendering import Environment, _AST_CACHE
-from sucuri.parser import parse_sucuri
+from sucuri.rendering import Environment
+from sucuri.paths import resolve_within
 from sucuri.state import State
 
 
@@ -129,19 +129,6 @@ def _extract_watch_block(html, key):
     return html[start_idx + len(start_marker):end_idx].strip()
 
 
-def _invalidate_cache_if_stale(path):
-    """Remove the AST cache entry if the file has been modified since last parse."""
-    if path not in _AST_CACHE:
-        return
-    cached_mtime = getattr(_invalidate_cache_if_stale, '_mtimes', {}).get(path)
-    current_mtime = os.path.getmtime(path)
-    if cached_mtime != current_mtime:
-        del _AST_CACHE[path]
-
-if not hasattr(_invalidate_cache_if_stale, '_mtimes'):
-    _invalidate_cache_if_stale._mtimes = {}
-
-
 class SucuriApp:
     """
     Built-in reactive web server for Sucuri templates.
@@ -204,9 +191,11 @@ class SucuriApp:
 
             return app.render("index.suc", state.data)
         """
-        path = os.path.join(self.template_dir, template_name)
-        _invalidate_cache_if_stale(path)
-        _invalidate_cache_if_stale._mtimes[path] = os.path.getmtime(path)
+        path = resolve_within(self.template_dir, template_name)
+        if path is None:
+            raise FileNotFoundError(
+                f"Template '{template_name}' is outside '{self.template_dir}'."
+            )
 
         self._current_template = path
         self._current_context  = context
@@ -464,10 +453,9 @@ class SucuriApp:
 
             def _serve_static(self, url_path):
                 rel = url_path[len("/static/"):]
-                static_root = os.path.realpath(os.path.join(app.template_dir, "static"))
-                abs_path = os.path.realpath(os.path.join(static_root, rel))
-                # Prevent path traversal outside static_root
-                if not abs_path.startswith(static_root + os.sep):
+                static_root = os.path.join(app.template_dir, "static")
+                abs_path = resolve_within(static_root, rel)
+                if abs_path is None:
                     self.send_error(403, "Forbidden")
                     return
                 if not os.path.isfile(abs_path):
@@ -560,7 +548,6 @@ class SucuriApp:
     def _render_partial(self, watch_key):
         """Re-render the full template and extract only the changed watch block."""
         path = self._current_template
-        _invalidate_cache_if_stale(path)
         # Full re-render with current (already updated) context
         full_html = self._env.template(path, self._current_context)
         return _extract_watch_block(full_html, watch_key)

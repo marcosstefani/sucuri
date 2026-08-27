@@ -1,5 +1,4 @@
 import os
-import pytest
 from sucuri.parser import parse_sucuri
 from sucuri.compiler import SucuriCompiler
 from sucuri.rendering import template
@@ -138,7 +137,6 @@ def test_watch_simple_render_ignores_wrapper():
 
 def test_watch_compiler_watch_enabled_emits_wrapper():
     """Compiler with watch_enabled=True must emit the wrapper div and markers."""
-    from sucuri.parser import parse_sucuri
 
     with open(get_file("test_watch.suc"), "r", encoding="utf-8") as f:
         source = f.read()

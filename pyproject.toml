@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sucuri"
+description = "Simple and efficient Template Engine for Python projects"
+readme = { file = "README.md", content-type = "text/markdown" }
+authors = [{ name = "Marcos Rosa", email = "marcos.cantor@gmail.com" }]
+keywords = ["template", "engine", "python"]
+# 3.9 is the real floor: on 3.8 the parser wraps subscripts in ast.Index, which the
+# condition evaluator rejects, silently making every dotted condition false.
+requires-python = ">=3.9"
+dependencies = ["lark", "click"]
+# Read from sucuri/__init__.py so the version has a single source of truth.
+dynamic = ["version"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Build Tools",
+    "License :: OSI Approved :: BSD License",
+]
+
+[project.urls]
+Homepage = "https://github.com/marcosstefani/sucuri"
+Source = "https://github.com/marcosstefani/sucuri"
+
+[project.optional-dependencies]
+desktop = [
+    "pywebview",
+    # pyobjc 12.0 is yanked for Python 3.9 and can fail to build on macOS.
+    # Keep pyobjc on the 11.x line for this interpreter/platform combination.
+    'pyobjc-core<12; platform_system == "Darwin" and python_version < "3.10"',
+    'pyobjc-framework-Cocoa<12; platform_system == "Darwin" and python_version < "3.10"',
+    'pyobjc-framework-Quartz<12; platform_system == "Darwin" and python_version < "3.10"',
+    'pyobjc-framework-security<12; platform_system == "Darwin" and python_version < "3.10"',
+    'pyobjc-framework-WebKit<12; platform_system == "Darwin" and python_version < "3.10"',
+    'pyobjc-framework-UniformTypeIdentifiers<12; platform_system == "Darwin" and python_version < "3.10"',
+]
+
+[project.scripts]
+sucuri = "sucuri.cli:cli"
+
+[tool.setuptools]
+packages = ["sucuri"]
+
+[tool.setuptools.dynamic]
+version = { attr = "sucuri.__version__" }
+
+[tool.setuptools.package-data]
+sucuri = ["assets/favicon.png"]

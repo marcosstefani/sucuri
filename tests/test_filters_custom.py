@@ -1,5 +1,4 @@
 from sucuri import Environment
-from tests.test_engine import get_file
 
 def test_custom_filters(tmp_path):
     env = Environment()
