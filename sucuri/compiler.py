@@ -7,6 +7,16 @@ from sucuri.expressions import ConditionError, UnknownNameError, evaluate_condit
 
 logger = logging.getLogger("sucuri")
 
+
+def _escape_raw_text(content, tag):
+    """Stop embedded content from closing its own <style>/<script> block.
+
+    A browser ends a raw text element at the first matching end tag, even inside a
+    string literal. Escaping the slash is inert in HTML and means the same thing in
+    CSS and JS string contexts.
+    """
+    return re.sub(rf'</(?={tag}\b)', r'<\\/', content, flags=re.IGNORECASE)
+
 class SucuriCompiler:
     def __init__(self, context=None, base_dir=".", filters=None, watch_enabled=False):
         # Shallow copy to prevent the compiler from mutating the caller's dict
@@ -62,11 +72,11 @@ class SucuriCompiler:
         extras = []
         if self.styles:
             for style in self.styles:
-                extras.append(f"    <style>{style}</style>")
+                extras.append(f"    <style>{_escape_raw_text(style, 'style')}</style>")
         if self.scripts:
             for script in self.scripts:
                 # The README.md describes inline scripts within style tags (injected along with the final HTML, no external SRCs)
-                extras.append(f"    <script>{script}</script>")
+                extras.append(f"    <script>{_escape_raw_text(script, 'script')}</script>")
                 
         if extras:
             extras_html = "\n".join(extras)

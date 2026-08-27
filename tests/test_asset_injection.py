@@ -47,3 +47,44 @@ class TestAssetInjection:
 
         assert html.count("body{color:red}") == 1
         assert html.rstrip().endswith("</style>")
+
+
+class TestRawTextBreakout:
+    """A browser ends <style>/<script> at the first end tag, even inside a string."""
+
+    def test_css_cannot_close_its_own_style_block(self, templates):
+        (templates / "theme.css").write_text(
+            'a::after{content:"</style><img src=x onerror=alert(1)>"}', encoding="utf-8"
+        )
+
+        html = render(templates, "html\n    body\n        css theme\n")
+
+        assert "</style><img" not in html
+        assert html.count("</style>") == 1
+        assert r"<\/style>" in html
+
+    def test_js_cannot_close_its_own_script_block(self, templates):
+        (templates / "app.js").write_text(
+            'var s = "</script><img src=x onerror=alert(2)>";', encoding="utf-8"
+        )
+
+        html = render(templates, "html\n    body\n        js app\n")
+
+        assert "</script><img" not in html
+        assert html.count("</script>") == 1
+        assert r"<\/script>" in html
+
+    def test_escape_is_case_insensitive(self, templates):
+        (templates / "theme.css").write_text('a{content:"</STYLE>"}', encoding="utf-8")
+
+        html = render(templates, "html\n    body\n        css theme\n")
+
+        assert html.count("</style>") == 1
+        assert "</STYLE>" not in html
+
+    def test_unrelated_closing_tags_are_left_alone(self, templates):
+        (templates / "theme.css").write_text('a{content:"</div>"}', encoding="utf-8")
+
+        html = render(templates, "html\n    body\n        css theme\n")
+
+        assert '"</div>"' in html
