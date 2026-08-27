@@ -2,6 +2,7 @@ from lark import Tree, Token
 import re
 import os
 from sucuri.parser import parse_sucuri
+from sucuri.expressions import ConditionError, evaluate_condition
 
 class SucuriCompiler:
     def __init__(self, context=None, base_dir=".", filters=None, watch_enabled=False):
@@ -504,8 +505,8 @@ class SucuriCompiler:
                 else_clause = child
 
         try:
-            is_true = eval(self._prepare_condition(condition), {}, self.context)
-        except Exception:
+            is_true = evaluate_condition(self._prepare_condition(condition), self.context)
+        except ConditionError:
             is_true = False
 
         if is_true:
@@ -522,8 +523,8 @@ class SucuriCompiler:
                 elif isinstance(child, Tree) and child.data == "block":
                     elif_block = child
             try:
-                elif_true = eval(self._prepare_condition(elif_condition), {}, self.context)
-            except Exception:
+                elif_true = evaluate_condition(self._prepare_condition(elif_condition), self.context)
+            except ConditionError:
                 elif_true = False
             if elif_true:
                 if elif_block:
