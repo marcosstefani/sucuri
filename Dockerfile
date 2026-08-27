@@ -8,12 +8,13 @@ WORKDIR /app
 # ── Install Sucuri ─────────────────────────────────────────────────────────────
 # Copy only the files needed to install the package, so that the source
 # tree is not baked into the final image.
-COPY setup.py setup.cfg README.md ./
+COPY pyproject.toml README.md ./
 COPY sucuri/ ./sucuri/
 
 RUN pip install --no-cache-dir . && \
-    # Remove build artefacts — the installed package stays in site-packages
-    rm -rf setup.py setup.cfg README.md sucuri/
+    # Remove build artefacts — the installed package stays in site-packages.
+    # build/ and *.egg-info are produced by setuptools during the install.
+    rm -rf pyproject.toml README.md sucuri/ build/ ./*.egg-info
 
 # ── Runtime ────────────────────────────────────────────────────────────────────
 # Sucuri's default port. Override with -e PORT=… or in your own CMD / compose.
