@@ -13,7 +13,6 @@ from socketserver import ThreadingMixIn
 from urllib.parse import urlparse, parse_qs
 
 from sucuri.rendering import Environment
-from sucuri.parser import parse_sucuri
 from sucuri.state import State
 
 

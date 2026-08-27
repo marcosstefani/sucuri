@@ -1,6 +1,5 @@
 """Dotted variable lookups, including list indexing."""
 
-import pytest
 
 from sucuri.rendering import Environment
 

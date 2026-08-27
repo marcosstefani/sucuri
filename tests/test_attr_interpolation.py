@@ -1,5 +1,4 @@
 import os
-import pytest
 from sucuri.rendering import template
 
 BASE_DIR = os.path.join(os.path.dirname(__file__), "templates")

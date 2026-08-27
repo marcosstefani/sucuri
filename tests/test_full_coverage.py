@@ -3,7 +3,6 @@ Comprehensive tests covering all Sucuri template engine features.
 Complements test_engine.py and test_filters_custom.py.
 """
 import os
-import pytest
 from sucuri.rendering import template
 from sucuri import Environment
 
