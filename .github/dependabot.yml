@@ -1,13 +1,21 @@
 version: 2
+
+# One consolidated pull request across ecosystems, instead of one PR per dependency.
+multi-ecosystem-groups:
+  all-dependencies:
+    schedule:
+      interval: "weekly"
+
 updates:
   # Keep GitHub Actions up to date
   - package-ecosystem: "github-actions"
     directory: "/"
-    schedule:
-      interval: "weekly"
+    # Required when an ecosystem belongs to a multi-ecosystem group.
+    patterns: ["*"]
+    multi-ecosystem-group: "all-dependencies"
 
   # Keep Python dependencies (pip / requirements.txt) up to date
   - package-ecosystem: "pip"
     directory: "/"
-    schedule:
-      interval: "weekly"
+    patterns: ["*"]
+    multi-ecosystem-group: "all-dependencies"
