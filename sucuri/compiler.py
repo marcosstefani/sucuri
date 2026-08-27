@@ -5,6 +5,7 @@ import os
 # Imported by name: compile() uses a local variable called 'html'.
 from html import escape
 from sucuri.parser import parse_sucuri
+from sucuri.paths import resolve_within
 from sucuri.expressions import ConditionError, UnknownNameError, evaluate_condition
 
 logger = logging.getLogger("sucuri")
@@ -92,15 +93,7 @@ class SucuriCompiler:
 
     def _resolve_within_base(self, path, extension):
         """Resolve a template-supplied path, refusing anything outside base_dir."""
-        if not path:
-            return None
-        if not path.endswith(extension):
-            path += extension
-        base_root = os.path.realpath(self.base_dir)
-        full_path = os.path.realpath(os.path.join(base_root, path))
-        if full_path != base_root and not full_path.startswith(base_root + os.sep):
-            return None
-        return full_path
+        return resolve_within(self.base_dir, path, extension)
 
     def _get_indent(self):
         return "    " * self.indent_level

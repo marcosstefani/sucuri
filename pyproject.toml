@@ -8,7 +8,9 @@ description = "Simple and efficient Template Engine for Python projects"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "Marcos Rosa", email = "marcos.cantor@gmail.com" }]
 keywords = ["template", "engine", "python"]
-requires-python = ">=3"
+# 3.9 is the real floor: on 3.8 the parser wraps subscripts in ast.Index, which the
+# condition evaluator rejects, silently making every dotted condition false.
+requires-python = ">=3.9"
 dependencies = ["lark", "click"]
 # Read from sucuri/__init__.py so the version has a single source of truth.
 dynamic = ["version"]

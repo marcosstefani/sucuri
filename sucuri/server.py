@@ -13,6 +13,7 @@ from socketserver import ThreadingMixIn
 from urllib.parse import urlparse, parse_qs
 
 from sucuri.rendering import Environment
+from sucuri.paths import resolve_within
 from sucuri.state import State
 
 
@@ -190,7 +191,11 @@ class SucuriApp:
 
             return app.render("index.suc", state.data)
         """
-        path = os.path.join(self.template_dir, template_name)
+        path = resolve_within(self.template_dir, template_name)
+        if path is None:
+            raise FileNotFoundError(
+                f"Template '{template_name}' is outside '{self.template_dir}'."
+            )
 
         self._current_template = path
         self._current_context  = context
@@ -448,10 +453,9 @@ class SucuriApp:
 
             def _serve_static(self, url_path):
                 rel = url_path[len("/static/"):]
-                static_root = os.path.realpath(os.path.join(app.template_dir, "static"))
-                abs_path = os.path.realpath(os.path.join(static_root, rel))
-                # Prevent path traversal outside static_root
-                if not abs_path.startswith(static_root + os.sep):
+                static_root = os.path.join(app.template_dir, "static")
+                abs_path = resolve_within(static_root, rel)
+                if abs_path is None:
                     self.send_error(403, "Forbidden")
                     return
                 if not os.path.isfile(abs_path):
