@@ -113,6 +113,9 @@ class SucuriCompiler:
         for part in parts[1:]:
             if isinstance(val, dict):
                 val = val.get(part, default)
+            elif isinstance(val, (list, tuple)) and part.isdigit():
+                index = int(part)
+                val = val[index] if index < len(val) else default
             else:
                 return default
         return val
